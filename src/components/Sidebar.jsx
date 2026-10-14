@@ -2,19 +2,20 @@ import React from 'react';
 
 export default function Sidebar({ activeTab, setActiveTab, onTriggerKillswitch, mobileOpen, setMobileOpen }) {
   const mainNavItems = [
+    { id: 'architecture', label: 'System Architecture', icon: 'account_tree', badge: 'FLOW', badgeColor: 'bg-primary' },
     { id: 'overview', label: 'Overview Dashboard', icon: 'dashboard', badge: null },
-    { id: 'live', label: 'Live Stream Analysis', icon: 'graphic_eq', badge: 'LIVE', badgeColor: 'bg-primary' },
+    { id: 'live', label: 'Live Call Monitor', icon: 'graphic_eq', badge: 'LIVE', badgeColor: 'bg-primary' },
+    { id: 'pipeline', label: 'Audio Pipeline Runner', icon: 'model_training', badge: 'EXECUTE', badgeColor: 'bg-primary' },
     { id: 'alert', label: 'High-Risk Warning', icon: 'crisis_alert', badge: 'ALERT', badgeColor: 'bg-error', fill: true },
     { id: 'report', label: 'Call Analysis Report', icon: 'description', badge: null },
     { id: 'history', label: 'Incident History', icon: 'history', badge: '1,420', badgeColor: 'bg-surface-container' },
-    { id: 'checker', label: 'Number Checker', icon: 'manage_search', badge: 'NEW', badgeColor: 'bg-primary' },
+    { id: 'checker', label: 'Caller Reputation & TRAI', icon: 'manage_search', badge: 'NEW', badgeColor: 'bg-primary' },
   ];
 
   const secondaryNavItems = [
-    { id: 'baselines', label: 'Acoustic Baselines', icon: 'multiline_chart' },
-    { id: 'synthetic_log', label: 'Synthetic Voice Log', icon: 'record_voice_over' },
-    { id: 'threat_intel', label: 'Threat Intelligence', icon: 'shield_with_heart' },
-    { id: 'policies', label: 'Security Policies', icon: 'tune' },
+    { id: 'model_engine', label: 'AASIST & Azure AI Engine', icon: 'network_intelligence' },
+    { id: 'datasets', label: 'IndicVoices-R & IndicSynth', icon: 'dataset' },
+    { id: 'indicators', label: 'The 6 Phishing Criteria', icon: 'psychology' },
   ];
 
   return (
@@ -27,7 +28,7 @@ export default function Sidebar({ activeTab, setActiveTab, onTriggerKillswitch, 
         />
       )}
 
-      <aside className={`fixed top-0 left-0 bottom-0 z-40 p-space-md h-screen w-72 flex flex-col justify-between shrink-0 bg-surface-container-lowest/85 backdrop-blur-xl border-r border-outline-variant/30 shadow-sm transition-transform duration-300 md:translate-x-0 ${
+      <aside className={`fixed top-0 left-0 bottom-0 z-40 p-space-md h-screen w-72 flex flex-col justify-between shrink-0 bg-surface-container-lowest/90 backdrop-blur-xl border-r border-outline-variant/30 shadow-sm transition-transform duration-300 md:translate-x-0 ${
         mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
       }`}>
         {/* Top Area: Crest Branding & Main Navigation */}
@@ -35,15 +36,15 @@ export default function Sidebar({ activeTab, setActiveTab, onTriggerKillswitch, 
           {/* Dossier / App Title */}
           <div className="flex items-center justify-between px-2 pt-1">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-on-primary shadow-sm shadow-primary/20">
-                <span className="material-symbols-outlined text-[24px] fill-icon">shield_with_heart</span>
+              <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-on-primary shadow-sm shadow-primary/25">
+                <span className="material-symbols-outlined text-[24px] fill-icon">shield</span>
               </div>
               <div className="flex flex-col">
-                <span className="font-title text-[18px] font-bold text-on-surface tracking-tight leading-snug">
-                  Sentinel Evaluator
+                <span className="font-title text-[17px] font-bold text-on-surface tracking-tight leading-snug">
+                  Voice Phishing Evaluator
                 </span>
-                <span className="font-mono-metric text-[11px] text-outline tracking-wider">
-                  Vishing Defense Node v4.2
+                <span className="font-mono-metric text-[11px] text-outline tracking-wide">
+                  Azure AI + AASIST Engine
                 </span>
               </div>
             </div>
@@ -63,7 +64,7 @@ export default function Sidebar({ activeTab, setActiveTab, onTriggerKillswitch, 
           {/* Main Navigation Views */}
           <div className="flex flex-col gap-1">
             <span className="px-3 text-[10px] uppercase font-mono-metric font-semibold text-outline tracking-wider mb-1">
-              Active Consoles
+              Core Modules (PDF Spec)
             </span>
             {mainNavItems.map((item) => {
               const isActive = activeTab === item.id;
@@ -94,7 +95,7 @@ export default function Sidebar({ activeTab, setActiveTab, onTriggerKillswitch, 
                         ? 'bg-primary text-on-primary animate-pulse' 
                         : item.id === 'alert'
                         ? 'bg-error text-on-error animate-pulse'
-                        : item.id === 'checker'
+                        : item.id === 'architecture'
                         ? 'bg-primary/15 text-primary'
                         : 'bg-surface-container-highest text-on-surface-variant'
                     }`}>
@@ -109,10 +110,10 @@ export default function Sidebar({ activeTab, setActiveTab, onTriggerKillswitch, 
             })}
           </div>
 
-          {/* Secondary Telemetry Menus */}
+          {/* Secondary Deep-Dive Menus */}
           <div className="flex flex-col gap-1 pt-2">
             <span className="px-3 text-[10px] uppercase font-mono-metric font-semibold text-outline tracking-wider mb-1">
-              Intelligence Tiers
+              Technical Foundations
             </span>
             {secondaryNavItems.map((item) => (
               <button
@@ -136,36 +137,23 @@ export default function Sidebar({ activeTab, setActiveTab, onTriggerKillswitch, 
 
         {/* Sidebar Bottom Container */}
         <div className="flex flex-col gap-3 pt-3 border-t border-outline-variant/30 mt-2">
-          {/* CTA Action Button */}
+          {/* Emergency Call Termination CTA */}
           <button 
             onClick={onTriggerKillswitch}
             className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-error/10 hover:bg-error/20 text-error border border-error/30 font-label-md text-label-md font-bold shadow-sm hover:brightness-105 active:scale-[0.98] transition-all duration-150"
           >
             <span className="w-2 h-2 rounded-full bg-error animate-ping"></span>
-            <span className="material-symbols-outlined text-[18px]">power_settings_new</span>
-            <span>Emergency Killswitch</span>
+            <span className="material-symbols-outlined text-[18px]">call_end</span>
+            <span>Emergency Call Disconnect</span>
           </button>
 
-          {/* Diagnostics and Settings */}
-          <div className="flex flex-col gap-0.5">
-            <button 
-              onClick={() => setActiveTab('diagnostics')}
-              className={`flex items-center gap-3 px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/60 font-label-md text-label-md transition-all ${
-                activeTab === 'diagnostics' ? 'bg-surface-container text-on-surface font-medium' : ''
-              }`}
-            >
-              <span className="material-symbols-outlined text-[18px]">health_and_safety</span>
-              <span>Engine Diagnostics</span>
-            </button>
-            <button 
-              onClick={() => setActiveTab('settings')}
-              className={`flex items-center gap-3 px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/60 font-label-md text-label-md transition-all ${
-                activeTab === 'settings' ? 'bg-surface-container text-on-surface font-medium' : ''
-              }`}
-            >
-              <span className="material-symbols-outlined text-[18px]">settings</span>
-              <span>Settings</span>
-            </button>
+          {/* Model Engine Status Badge */}
+          <div className="p-2.5 rounded-xl bg-surface-container-low border border-outline-variant/25 text-[11px] font-mono-metric flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-tertiary"></span>
+              <span className="text-on-surface-variant font-medium">Risk Fusion Node</span>
+            </div>
+            <span className="text-tertiary font-bold">ONLINE</span>
           </div>
         </div>
       </aside>

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 
 export default function KillswitchModal({ isOpen, onClose, onConfirmKill }) {
-  const [confirmStep, setConfirmStep] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
 
   if (!isOpen) return null;
@@ -10,9 +9,8 @@ export default function KillswitchModal({ isOpen, onClose, onConfirmKill }) {
     setIsExecuting(true);
     setTimeout(() => {
       setIsExecuting(false);
-      setConfirmStep(false);
       onConfirmKill();
-    }, 1200);
+    }, 900);
   };
 
   return (
@@ -24,36 +22,36 @@ export default function KillswitchModal({ isOpen, onClose, onConfirmKill }) {
         {/* Header Badge */}
         <div className="flex items-start gap-4">
           <div className="w-12 h-12 rounded-2xl bg-error text-on-error flex items-center justify-center shrink-0 shadow-lg shadow-error/20">
-            <span className="material-symbols-outlined text-[28px] fill-icon">crisis_alert</span>
+            <span className="material-symbols-outlined text-[28px] fill-icon">call_end</span>
           </div>
           <div>
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-full bg-error/15 border border-error/30 text-error font-mono-metric text-[11px] font-bold uppercase tracking-wider">
-                Stage 4 Isolation Protocol
+                Emergency Intercept Action
               </span>
             </div>
-            <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface mt-1">
-              Emergency Killswitch
+            <h3 className="font-headline-sm text-xl font-bold text-on-surface mt-1">
+              Emergency Call Disconnect
             </h3>
-            <p className="font-body-md text-on-surface-variant text-sm mt-1">
-              Mandatory carrier disconnect and SIP RTP stream isolation under Section 43B.
+            <p className="font-body-md text-on-surface-variant text-xs mt-1">
+              Instantly terminates active audio capture, isolates the scammer, and alerts guardian.
             </p>
           </div>
         </div>
 
-        {/* Warning Checklist */}
-        <div className="mt-5 p-4 rounded-2xl bg-error-container/20 border border-error/20 space-y-2 font-body-md text-sm">
+        {/* Action Checklist */}
+        <div className="mt-5 p-4 rounded-2xl bg-error/5 border border-error/20 space-y-2 text-xs">
           <div className="flex items-center gap-2.5 text-on-surface">
-            <span className="material-symbols-outlined text-error text-[18px]">check_circle</span>
-            <span>Force sever 48 active telephony SIP carrier trunks</span>
+            <span className="material-symbols-outlined text-error text-base">check_circle</span>
+            <span>Terminate live telephony/VoIP audio stream immediately</span>
           </div>
           <div className="flex items-center gap-2.5 text-on-surface">
-            <span className="material-symbols-outlined text-error text-[18px]">check_circle</span>
-            <span>Inject active decoy honeytrap speech stream to attacker node</span>
+            <span className="material-symbols-outlined text-error text-base">check_circle</span>
+            <span>Dispatch high-priority Firebase push notification to guardian with call snippet</span>
           </div>
           <div className="flex items-center gap-2.5 text-on-surface">
-            <span className="material-symbols-outlined text-error text-[18px]">check_circle</span>
-            <span>Broadcast instant high-priority alert to National Cyber Cell (I4C)</span>
+            <span className="material-symbols-outlined text-error text-base">check_circle</span>
+            <span>Commit structured analysis report to PostgreSQL database for review</span>
           </div>
         </div>
 
@@ -62,24 +60,24 @@ export default function KillswitchModal({ isOpen, onClose, onConfirmKill }) {
           <button
             onClick={onClose}
             disabled={isExecuting}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-outline-variant/40 hover:bg-surface-container font-label-md text-label-md font-semibold text-on-surface transition-all"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-outline-variant/40 hover:bg-surface-container font-label-md text-xs font-semibold text-on-surface transition-all"
           >
-            Cancel Protocol
+            Cancel
           </button>
           <button
             onClick={handleExecute}
             disabled={isExecuting}
-            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-error hover:bg-error/90 text-on-error font-label-md text-label-md font-bold shadow-md shadow-error/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-error hover:bg-error/90 text-on-error font-label-md text-xs font-bold shadow-md shadow-error/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {isExecuting ? (
               <>
                 <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                <span>Terminating Trunks...</span>
+                <span>Disconnecting...</span>
               </>
             ) : (
               <>
-                <span className="material-symbols-outlined text-[18px]">power_settings_new</span>
-                <span>Confirm Killswitch</span>
+                <span className="material-symbols-outlined text-base">call_end</span>
+                <span>Confirm Immediate Disconnect</span>
               </>
             )}
           </button>
