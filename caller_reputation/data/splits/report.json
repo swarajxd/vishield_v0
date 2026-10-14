@@ -1,0 +1,70 @@
+{
+  "seed": 42,
+  "total": 80,
+  "train": {
+    "n": 50,
+    "label": {
+      "legitimate": 15,
+      "phishing": 35
+    },
+    "category": {
+      "authority_threat_scam": 5,
+      "bank_verification_scam": 5,
+      "delivery_scam": 5,
+      "kyc_update_scam": 5,
+      "legit_bank_notification": 5,
+      "legit_customer_support": 5,
+      "legit_personal_conversation": 5,
+      "otp_request_scam": 5,
+      "tech_support_scam": 5,
+      "urgent_payment_scam": 5
+    },
+    "source": {
+      "synthetic": 50
+    }
+  },
+  "val": {
+    "n": 10,
+    "label": {
+      "legitimate": 3,
+      "phishing": 7
+    },
+    "category": {
+      "authority_threat_scam": 1,
+      "bank_verification_scam": 1,
+      "delivery_scam": 1,
+      "kyc_update_scam": 1,
+      "legit_bank_notification": 1,
+      "legit_customer_support": 1,
+      "legit_personal_conversation": 1,
+      "otp_request_scam": 1,
+      "tech_support_scam": 1,
+      "urgent_payment_scam": 1
+    },
+    "source": {
+      "synthetic": 10
+    }
+  },
+  "test": {
+    "n": 20,
+    "label": {
+      "legitimate": 6,
+      "phishing": 14
+    },
+    "category": {
+      "authority_threat_scam": 2,
+      "bank_verification_scam": 2,
+      "delivery_scam": 2,
+      "kyc_update_scam": 2,
+      "legit_bank_notification": 2,
+      "legit_customer_support": 2,
+      "legit_personal_conversation": 2,
+      "otp_request_scam": 2,
+      "tech_support_scam": 2,
+      "urgent_payment_scam": 2
+    },
+    "source": {
+      "synthetic": 20
+    }
+  }
+}

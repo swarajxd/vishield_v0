@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.invalid/vishield/dataset-record.schema.json",
+  "title": "ViShield transcript dataset record",
+  "description": "One fictional or explicitly consented call transcript. Stored as JSON Lines.",
+  "type": "object",
+  "required": ["id", "text", "label", "category", "language", "source", "license", "consent"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "pattern": "^vs-[0-9]{4,}$" },
+    "text": { "type": "string", "minLength": 20, "maxLength": 5000 },
+    "label": { "type": "string", "enum": ["phishing", "legitimate"] },
+    "category": {
+      "type": "string",
+      "enum": [
+        "bank_verification_scam", "kyc_update_scam", "otp_request_scam", "tech_support_scam",
+        "delivery_scam", "authority_threat_scam", "urgent_payment_scam",
+        "legit_customer_support", "legit_bank_notification", "legit_personal_conversation"
+      ]
+    },
+    "language": { "type": "string", "pattern": "^[a-z]{2}(-[A-Z]{2})?$" },
+    "source": { "type": "string", "enum": ["synthetic", "public_domain", "licensed", "consented"] },
+    "license": { "type": "string", "minLength": 2 },
+    "consent": {
+      "type": "string",
+      "description": "'not_applicable_synthetic' for fictional text, otherwise a consent record reference (never a person's name).",
+      "minLength": 2
+    },
+    "notes": { "type": "string" }
+  }
+}

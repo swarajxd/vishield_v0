@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+
+<html class="h-full bg-background text-on-background antialiased" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Incident History &amp; Telecom Intercepts - Sentinel Evaluator</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts: Inter & JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "surface-container-low": "#f4f3f8",
+            "outline-variant": "#c1c6d7",
+            "on-error-container": "#93000a",
+            "background": "#faf8fe",
+            "inverse-surface": "#2f3034",
+            "on-primary-fixed-variant": "#004493",
+            "primary-container": "#0070eb",
+            "on-surface-variant": "#414755",
+            "on-secondary-fixed-variant": "#3631b4",
+            "secondary-container": "#6664e4",
+            "outline": "#717786",
+            "on-secondary-container": "#fffbff",
+            "inverse-on-surface": "#f1f0f5",
+            "surface-container-highest": "#e3e2e7",
+            "surface-container-lowest": "#ffffff",
+            "tertiary-container": "#008733",
+            "primary-fixed-dim": "#adc6ff",
+            "surface-variant": "#e3e2e7",
+            "inverse-primary": "#adc6ff",
+            "surface-bright": "#faf8fe",
+            "on-tertiary-container": "#f7fff2",
+            "surface-container-high": "#e9e7ed",
+            "primary": "#0058bc",
+            "secondary-fixed": "#e2dfff",
+            "secondary": "#4c4aca",
+            "surface-container": "#eeedf3",
+            "tertiary-fixed-dim": "#53e16f",
+            "on-secondary": "#ffffff",
+            "error": "#ba1a1a",
+            "on-background": "#1a1b1f",
+            "tertiary-fixed": "#72fe88",
+            "on-tertiary-fixed": "#002107",
+            "on-primary-container": "#fefcff",
+            "on-surface": "#1a1b1f",
+            "on-primary": "#ffffff",
+            "primary-fixed": "#d8e2ff",
+            "on-error": "#ffffff",
+            "surface-tint": "#005bc1",
+            "on-tertiary-fixed-variant": "#00531c",
+            "on-secondary-fixed": "#0c006a",
+            "surface": "#faf8fe",
+            "surface-dim": "#dad9df",
+            "tertiary": "#006b27",
+            "secondary-fixed-dim": "#c2c1ff",
+            "error-container": "#ffdad6",
+            "on-tertiary": "#ffffff",
+            "on-primary-fixed": "#001a41"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "gutter": "1.5rem",
+            "margin-mobile": "1.25rem",
+            "space-xs": "0.25rem",
+            "margin": "2.5rem",
+            "space-md": "1rem",
+            "space-sm": "0.5rem",
+            "gutter-mobile": "1rem",
+            "space-lg": "1.5rem",
+            "space-xl": "2.5rem"
+          },
+          "fontFamily": {
+            "headline-lg-mobile": ["Inter"],
+            "body-lg": ["Inter"],
+            "headline-md": ["Inter"],
+            "mono-metric": ["JetBrains Mono"],
+            "headline-lg": ["Inter"],
+            "title": ["Inter"],
+            "label-sm": ["Inter"],
+            "headline-sm": ["Inter"],
+            "body-md": ["Inter"],
+            "label-md": ["Inter"],
+            "display-lg-mobile": ["Inter"],
+            "display-lg": ["Inter"]
+          },
+          "fontSize": {
+            "headline-lg-mobile": ["26px", {"lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "700"}],
+            "body-lg": ["17px", {"lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "400"}],
+            "headline-md": ["28px", {"lineHeight": "34px", "letterSpacing": "-0.015em", "fontWeight": "600"}],
+            "mono-metric": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+            "headline-lg": ["34px", {"lineHeight": "41px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "title": ["20px", {"lineHeight": "25px", "letterSpacing": "-0.008em", "fontWeight": "600"}],
+            "label-sm": ["11px", {"lineHeight": "13px", "letterSpacing": "0.04em", "fontWeight": "600"}],
+            "headline-sm": ["22px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+            "body-md": ["15px", {"lineHeight": "21px", "letterSpacing": "0em", "fontWeight": "400"}],
+            "label-md": ["13px", {"lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+            "display-lg-mobile": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.025em", "fontWeight": "700"}],
+            "display-lg": ["56px", {"lineHeight": "64px", "letterSpacing": "-0.03em", "fontWeight": "700"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 20px;
+      line-height: 1;
+      display: inline-block;
+      text-transform: none;
+      letter-spacing: normal;
+      word-wrap: normal;
+      white-space: nowrap;
+      direction: ltr;
+      -webkit-font-smoothing: antialiased;
+    }
+    
+    /* Apple glass & highlight utilities */
+    .apple-glass-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
+    }
+    
+    .apple-table-shadow {
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Custom scrollbar for sleek horizontal views */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.12);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 0, 0, 0.22);
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col font-body-md text-on-surface antialiased bg-background selection:bg-primary-fixed selection:text-on-primary-fixed-variant">
+<!-- ========================================================================= -->
+<!-- SHARED COMPONENT: SideNavBar (glass_sidebar)                              -->
+<!-- ========================================================================= -->
+<aside class="fixed top-0 left-0 bottom-0 z-40 p-space-md h-screen w-72 flex flex-col justify-between shrink-0 bg-surface-container-lowest/80 dark:bg-inverse-surface/80 backdrop-blur-xl border-r border-outline-variant/30 dark:border-outline/20 shadow-sm dark:shadow-none hidden md:flex transition-all">
+<!-- Header / Crest -->
+<div class="flex flex-col gap-space-md">
+<div class="flex items-center gap-3 px-2 py-1">
+<div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-sm ring-1 ring-primary/20">
+<span class="material-symbols-outlined" data-icon="shield_with_heart" style="font-variation-settings: 'FILL' 1;">shield_with_heart</span>
+</div>
+<div>
+<h1 class="font-title text-title font-semibold text-on-surface dark:text-inverse-on-surface tracking-tight leading-snug">Sentinel Evaluator</h1>
+<p class="font-mono-metric text-mono-metric text-outline">Vishing Defense Node v4.2</p>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="flex flex-col gap-1 mt-2">
+<!-- 1. Live Stream Analysis -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant dark:text-outline-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:bg-surface-container-high/60 dark:hover:bg-surface-variant/20 active:scale-[0.98] transition-transform duration-150 ease-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined text-outline" data-icon="graphic_eq">graphic_eq</span>
+<span>Live Stream Analysis</span>
+</a>
+<!-- 2. Incident Telemetry (CURRENT SCREEN: EXACT/SEMANTIC ACTIVE TARGET) -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 dark:bg-primary-container/20 text-primary dark:text-inverse-primary font-semibold transition-all hover:bg-surface-container-high/60 dark:hover:bg-surface-variant/20 active:scale-[0.98] duration-150 ease-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined text-primary" data-icon="crisis_alert" style="font-variation-settings: 'FILL' 1;">crisis_alert</span>
+<span>Incident Telemetry</span>
+<span class="ml-auto w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+</a>
+<!-- 3. Acoustic Baselines -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant dark:text-outline-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:bg-surface-container-high/60 dark:hover:bg-surface-variant/20 active:scale-[0.98] transition-transform duration-150 ease-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined text-outline" data-icon="multiline_chart">multiline_chart</span>
+<span>Acoustic Baselines</span>
+</a>
+<!-- 4. Synthetic Voice Log -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant dark:text-outline-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:bg-surface-container-high/60 dark:hover:bg-surface-variant/20 active:scale-[0.98] transition-transform duration-150 ease-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined text-outline" data-icon="record_voice_over">record_voice_over</span>
+<span>Synthetic Voice Log</span>
+</a>
+<!-- 5. Threat Intelligence -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant dark:text-outline-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:bg-surface-container-high/60 dark:hover:bg-surface-variant/20 active:scale-[0.98] transition-transform duration-150 ease-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined text-outline" data-icon="shield_with_heart">shield_with_heart</span>
+<span>Threat Intelligence</span>
+</a>
+<!-- 6. Security Policies -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant dark:text-outline-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:bg-surface-container-high/60 dark:hover:bg-surface-variant/20 active:scale-[0.98] transition-transform duration-150 ease-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined text-outline" data-icon="tune">tune</span>
+<span>Security Policies</span>
+</a>
+</nav>
+</div>
+<!-- Sidebar Bottom Container -->
+<div class="flex flex-col gap-3 pt-3 border-t border-outline-variant/30 dark:border-outline/20">
+<!-- CTA Action Button -->
+<button class="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-error text-on-error font-label-md text-label-md font-semibold shadow-sm hover:brightness-105 active:scale-[0.98] transition-all duration-150">
+<span class="material-symbols-outlined text-base" data-icon="crisis_alert">crisis_alert</span>
+<span>Emergency Killswitch</span>
+</button>
+<!-- Sub Links -->
+<div class="flex flex-col gap-0.5 mt-1">
+<a class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/60 text-label-md font-label-md transition-all" href="#">
+<span class="material-symbols-outlined text-outline" data-icon="health_and_safety">health_and_safety</span>
+<span>Engine Diagnostics</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/60 text-label-md font-label-md transition-all" href="#">
+<span class="material-symbols-outlined text-outline" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- ========================================================================= -->
+<!-- SHARED COMPONENT: TopNavBar (docked full-width top-0 sticky)              -->
+<!-- ========================================================================= -->
+<header class="docked full-width top-0 sticky z-30 bg-surface/75 dark:bg-inverse-surface/75 backdrop-blur-md border-b border-outline-variant/30 dark:border-outline/20 flex justify-between items-center w-full px-space-lg py-space-sm pl-4 md:pl-80 transition-all">
+<!-- Left: Title & Quick Search -->
+<div class="flex items-center gap-4">
+<div class="md:hidden flex items-center">
+<button class="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface">
+<span class="material-symbols-outlined" data-icon="tune">tune</span>
+</button>
+</div>
+<div>
+<h2 class="font-title text-title font-bold text-on-surface dark:text-inverse-on-surface leading-tight">Sentinel Voice Phishing Evaluator</h2>
+<div class="hidden sm:flex items-center gap-6 mt-1 text-label-md font-label-md">
+<a class="text-on-surface-variant hover:text-on-surface pb-1 font-medium transition-colors" href="#">All Streams</a>
+<a class="text-primary font-semibold border-b-2 border-primary pb-1 transition-colors" href="#">Live Priority</a>
+<a class="text-on-surface-variant hover:text-on-surface pb-1 font-medium transition-colors" href="#">Flagged Synthetic</a>
+<a class="text-on-surface-variant hover:text-on-surface pb-1 font-medium transition-colors" href="#">Archived Logs</a>
+</div>
+</div>
+</div>
+<!-- Right Actions Cluster -->
+<div class="flex items-center gap-2.5">
+<button class="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-high/60 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high text-label-md font-label-md font-medium border border-outline-variant/30 active:scale-[0.98] transition-all">
+<span class="material-symbols-outlined text-base" data-icon="tune">tune</span>
+<span>Export Telemetry</span>
+</button>
+<button class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-primary text-on-primary font-label-md text-label-md font-semibold hover:brightness-105 active:scale-[0.98] shadow-sm transition-all">
+<span class="material-symbols-outlined text-base" data-icon="notifications_active">notifications_active</span>
+<span class="hidden sm:inline">Deploy Active Probe</span>
+</button>
+<!-- Profile Avatar -->
+<div class="relative ml-1">
+<img class="w-8 h-8 rounded-full object-cover ring-2 ring-primary/20 hover:ring-primary/40 transition-all cursor-pointer" data-alt="Chief Security Operations Officer authenticated profile picture with high assurance cryptographic badge, captured in soft directional Apple studio lighting with clean neutral background and subtle glowing blue biometric verify ring" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-G5nAITztmu40L0MJ59rKEbGXtCXd5lYKXnz47PVTlmqtWzbUwP0XiP0kjJlgDNaGjyDe6bHIckwzUdZ0ItlJrDyyuHTFrqE-6HzTUpjOrF9l6WDzm9W0MUN4yCwsFC_O39u82Ft8T-EUUpO1aayB08sUusUSB_QGxsE5lM488QkS7bPwdNuIX2LDP_LnQr4gqelqwVA7QIdYDni9XDWIIQIGOHktOsvvKx1-PW_dBIh4Nr0wz4iiAA"/>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-tertiary-container rounded-full ring-2 ring-surface"></span>
+</div>
+</div>
+</header>
+<!-- ========================================================================= -->
+<!-- MAIN WORKSPACE CANVAS                                                     -->
+<!-- ========================================================================= -->
+<main class="flex-1 md:pl-72 flex flex-col min-w-0 transition-all">
+<div class="max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-space-xl py-space-md sm:py-6 flex flex-col gap-6">
+<!-- ===================================================================== -->
+<!-- SECTION 1: HEADER & TELECOM AUDIT BADGE                               -->
+<!-- ===================================================================== -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-black/[0.04]">
+<div>
+<div class="flex items-center gap-2.5">
+<h2 class="font-headline-md text-headline-md font-bold tracking-tight text-on-surface">
+              Incident History &amp; Telecom Intercepts
+            </h2>
+<span class="hidden md:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface-container border border-outline-variant/40 font-mono-metric text-mono-metric text-on-surface-variant font-medium">
+              SONOMA NODE #04
+            </span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-0.5">
+            Real-time deepfake audio forensics, conversational vishing traces, and voice carrier metadata logs.
+          </p>
+</div>
+<!-- Live Audit Sync Badge -->
+<div class="flex items-center self-start sm:self-center">
+<div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-container-lowest border border-outline-variant/30 shadow-xs">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-tertiary-container opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-tertiary-container"></span>
+</span>
+<span class="font-mono-metric text-mono-metric font-medium text-on-surface">TRAI Gateway Synchronized:</span>
+<span class="font-mono-metric text-mono-metric font-semibold text-tertiary">0.12s latency</span>
+<span class="material-symbols-outlined text-tertiary text-sm ml-0.5" data-icon="health_and_safety">health_and_safety</span>
+</div>
+</div>
+</div>
+<!-- ===================================================================== -->
+<!-- SECTION 2: TOP METRIC SUMMARY CARDS (Apple Bento Cards)               -->
+<!-- ===================================================================== -->
+<section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- Metric 1: Total Intercepts -->
+<div class="apple-glass-card rounded-xl p-space-md flex flex-col justify-between transition-transform hover:-translate-y-0.5 duration-200">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md font-medium text-on-surface-variant">Total Intercepts</span>
+<span class="p-1 rounded-md bg-surface-container-high/60 text-on-surface-variant">
+<span class="material-symbols-outlined text-base" data-icon="graphic_eq">graphic_eq</span>
+</span>
+</div>
+<div class="mt-3 flex items-baseline justify-between">
+<div>
+<span class="font-headline-lg text-headline-lg font-bold text-on-surface">1,420</span>
+<span class="font-label-sm text-label-sm text-outline ml-1 font-medium">calls</span>
+</div>
+<div class="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-xs mr-0.5" data-icon="multiline_chart">multiline_chart</span>
+              100% Volume
+            </div>
+</div>
+<div class="w-full bg-surface-container-high rounded-full h-1 mt-3 overflow-hidden">
+<div class="bg-primary h-1 rounded-full" style="width: 100%"></div>
+</div>
+</div>
+<!-- Metric 2: High Risk -->
+<div class="apple-glass-card rounded-xl p-space-md flex flex-col justify-between transition-transform hover:-translate-y-0.5 duration-200">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md font-medium text-on-surface-variant">High Risk Flagged</span>
+<span class="p-1 rounded-md bg-error/10 text-error">
+<span class="material-symbols-outlined text-base" data-icon="crisis_alert" style="font-variation-settings: 'FILL' 1;">crisis_alert</span>
+</span>
+</div>
+<div class="mt-3 flex items-baseline justify-between">
+<div>
+<span class="font-headline-lg text-headline-lg font-bold text-error">184</span>
+<span class="font-label-sm text-label-sm text-outline ml-1 font-medium">calls</span>
+</div>
+<div class="inline-flex items-center px-2 py-0.5 rounded-full bg-error/10 border border-error/20 text-error font-label-sm text-label-sm font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-error mr-1.5"></span>
+              13.0%
+            </div>
+</div>
+<div class="w-full bg-surface-container-high rounded-full h-1 mt-3 overflow-hidden">
+<div class="bg-error h-1 rounded-full" style="width: 13%"></div>
+</div>
+</div>
+<!-- Metric 3: Suspicious -->
+<div class="apple-glass-card rounded-xl p-space-md flex flex-col justify-between transition-transform hover:-translate-y-0.5 duration-200">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md font-medium text-on-surface-variant">Suspicious Anomaly</span>
+<span class="p-1 rounded-md bg-secondary/10 text-secondary">
+<span class="material-symbols-outlined text-base" data-icon="record_voice_over">record_voice_over</span>
+</span>
+</div>
+<div class="mt-3 flex items-baseline justify-between">
+<div>
+<span class="font-headline-lg text-headline-lg font-bold text-secondary">312</span>
+<span class="font-label-sm text-label-sm text-outline ml-1 font-medium">calls</span>
+</div>
+<div class="inline-flex items-center px-2 py-0.5 rounded-full bg-secondary/10 border border-secondary/20 text-secondary font-label-sm text-label-sm font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary mr-1.5"></span>
+              22.0%
+            </div>
+</div>
+<div class="w-full bg-surface-container-high rounded-full h-1 mt-3 overflow-hidden">
+<div class="bg-secondary h-1 rounded-full" style="width: 22%"></div>
+</div>
+</div>
+<!-- Metric 4: Safe -->
+<div class="apple-glass-card rounded-xl p-space-md flex flex-col justify-between transition-transform hover:-translate-y-0.5 duration-200">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md font-medium text-on-surface-variant">Safe &amp; Natural Audio</span>
+<span class="p-1 rounded-md bg-tertiary-container/10 text-tertiary">
+<span class="material-symbols-outlined text-base" data-icon="shield_with_heart" style="font-variation-settings: 'FILL' 1;">shield_with_heart</span>
+</span>
+</div>
+<div class="mt-3 flex items-baseline justify-between">
+<div>
+<span class="font-headline-lg text-headline-lg font-bold text-tertiary">924</span>
+<span class="font-label-sm text-label-sm text-outline ml-1 font-medium">calls</span>
+</div>
+<div class="inline-flex items-center px-2 py-0.5 rounded-full bg-tertiary/10 border border-tertiary/20 text-tertiary font-label-sm text-label-sm font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary mr-1.5"></span>
+              65.0%
+            </div>
+</div>
+<div class="w-full bg-surface-container-high rounded-full h-1 mt-3 overflow-hidden">
+<div class="bg-tertiary h-1 rounded-full" style="width: 65%"></div>
+</div>
+</div>
+</section>
+<!-- ===================================================================== -->
+<!-- SECTION 3: FILTER BAR & APPLE SEGMENTED CONTROLS                     -->
+<!-- ===================================================================== -->
+<section class="apple-glass-card rounded-xl p-2.5 sm:p-3 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 shadow-sm">
+<!-- Left: HIG Native Segmented Pill Selector -->
+<div class="flex p-1 bg-surface-container rounded-lg self-start sm:self-auto overflow-x-auto max-w-full">
+<button class="px-3.5 py-1 rounded-[6px] text-label-md font-label-md font-semibold bg-surface-container-lowest text-on-surface shadow-xs active:scale-95 transition-all">
+            All <span class="ml-1 text-outline font-normal">1,420</span>
+</button>
+<button class="px-3.5 py-1 rounded-[6px] text-label-md font-label-md font-medium text-on-surface-variant hover:text-on-surface active:scale-95 transition-all">
+            High Risk <span class="ml-1 text-error/80 font-semibold">184</span>
+</button>
+<button class="px-3.5 py-1 rounded-[6px] text-label-md font-label-md font-medium text-on-surface-variant hover:text-on-surface active:scale-95 transition-all">
+            Suspicious <span class="ml-1 text-secondary/80 font-semibold">312</span>
+</button>
+<button class="px-3.5 py-1 rounded-[6px] text-label-md font-label-md font-medium text-on-surface-variant hover:text-on-surface active:scale-95 transition-all">
+            Safe <span class="ml-1 text-tertiary font-semibold">924</span>
+</button>
+</div>
+<!-- Right: Pickers, Search, and Date Controls -->
+<div class="flex flex-wrap items-center gap-2">
+<!-- Quick Search Field -->
+<div class="relative flex-1 sm:w-56 min-w-[160px]">
+<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-outline text-base" data-icon="tune">tune</span>
+<input class="w-full pl-8 pr-3 py-1.5 text-label-md font-label-md bg-surface-container-high/40 rounded-lg border border-transparent focus:border-primary focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary/10 text-on-surface placeholder:text-outline outline-none transition-all" placeholder="Search caller, ID, circle..." type="text"/>
+</div>
+<!-- Language Picker Dropdown -->
+<div class="relative">
+<select class="appearance-none pl-3 pr-7 py-1.5 text-label-md font-label-md bg-surface-container-high/40 hover:bg-surface-container-high/70 text-on-surface rounded-lg border border-transparent cursor-pointer font-medium outline-none focus:ring-2 focus:ring-primary/20">
+<option>All Languages (Hindi, English, etc.)</option>
+<option>Hindi (hi-IN)</option>
+<option>English (en-IN)</option>
+<option>Tamil (ta-IN)</option>
+<option>Bengali (bn-IN)</option>
+<option>Kannada (kn-IN)</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-sm" data-icon="tune">tune</span>
+</div>
+<!-- Categories Picker Dropdown -->
+<div class="relative">
+<select class="appearance-none pl-3 pr-7 py-1.5 text-label-md font-label-md bg-surface-container-high/40 hover:bg-surface-container-high/70 text-on-surface rounded-lg border border-transparent cursor-pointer font-medium outline-none focus:ring-2 focus:ring-primary/20">
+<option>All Scam Categories</option>
+<option>Digital Arrest Threat</option>
+<option>Fake NBFC Loan Pre-approval</option>
+<option>KYC Expiry Urgency</option>
+<option>Lottery / Tax Impersonation</option>
+<option>Synthetic Family Voice Clone</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-sm" data-icon="tune">tune</span>
+</div>
+<!-- Apple Date Picker Button -->
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 text-label-md font-label-md bg-surface-container-high/40 hover:bg-surface-container-high/70 text-on-surface rounded-lg border border-transparent font-medium active:scale-95 transition-all">
+<span class="material-symbols-outlined text-base text-outline" data-icon="tune">tune</span>
+<span>Last 24 Hours</span>
+</button>
+</div>
+</section>
+<!-- ===================================================================== -->
+<!-- SECTION 4: INTERACTIVE DATA TABLE                                     -->
+<!-- Numbers & macOS Sonoma Spreadsheet Elegance                            -->
+<!-- ===================================================================== -->
+<section class="bg-surface-container-lowest rounded-xl border border-black/[0.06] overflow-hidden apple-table-shadow">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<!-- Table Header -->
+<thead>
+<tr class="bg-surface-container-low/80 border-b border-black/[0.05] text-outline text-label-sm font-label-sm tracking-wider">
+<th class="w-10 py-3 pl-4 pr-1">
+<input class="rounded border-outline-variant text-primary focus:ring-primary/20 w-4 h-4 cursor-pointer" type="checkbox"/>
+</th>
+<th class="py-3 px-3 font-semibold">DATE &amp; TIME</th>
+<th class="py-3 px-3 font-semibold">CALLER &amp; TELECOM CIRCLE</th>
+<th class="py-3 px-3 font-semibold">RISK BADGE &amp; SCORE</th>
+<th class="py-3 px-3 font-semibold">LANGUAGE</th>
+<th class="py-3 px-3 font-semibold">SCAM CATEGORY</th>
+<th class="py-3 px-3 font-semibold">GUARDIAN STATUS</th>
+<th class="py-3 pr-4 pl-3 text-right font-semibold">ACTION</th>
+</tr>
+</thead>
+<!-- Table Body -->
+<tbody class="divide-y divide-black/[0.03] text-body-md font-body-md">
+<!-- ROW 1: High Risk -->
+<tr class="hover:bg-black/[0.02] transition-colors group">
+<td class="py-3.5 pl-4 pr-1">
+<input class="rounded border-outline-variant text-primary focus:ring-primary/20 w-4 h-4 cursor-pointer" type="checkbox"/>
+</td>
+<td class="py-3.5 px-3 whitespace-nowrap">
+<div class="font-mono-metric text-mono-metric font-semibold text-on-surface">12 Oct, 14:38:21</div>
+<div class="font-mono-metric text-mono-metric text-outline">Call ID: #IN-89301</div>
+</td>
+<td class="py-3.5 px-3 whitespace-nowrap">
+<div class="font-semibold text-on-surface flex items-center gap-1.5">
+                    +91 98201 44820
+                    <span class="material-symbols-outlined text-xs text-error" data-icon="crisis_alert">crisis_alert</span>
+</div>
+<div class="text-label-sm font-label-sm text-outline">Airtel • Mumbai Telecom Circle</div>
+</td>
+<td class="py-3.5 px-3 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-label-sm font-label-sm font-semibold bg-error/10 border border-error/20 text-error">
+                      High Risk
+                    </span>
+<span class="font-mono-metric text-mono-metric font-bold text-error">94.2%</span>
+</div>
+<div class="w-24 bg-surface-container-high rounded-full h-1 mt-1.5">
+<div class="bg-error h-1 rounded-full" style="width: 94%"></div>
+</div>
+</td>
+<td class="py-3.5 px-3 whitespace-nowrap">
+<span class="inline-flex items-center gap-1 text-label-md font-label-md font-medium text-on-surface">
+                    Hindi (hi-IN)
+                  </span>
+<div class="text-label-sm font-label-sm text-outline">Synthesizer Clone Detected</div>
+</td>
+<td class="py-3.5 px-3">
+<span class="inline-flex items-center gap-1 text-on-surface font-medium">
+                    Digital Arrest Threat
+                  </span>
+<div class="text-label-sm font-label-sm text-error/90 font-mono-metric">CBI / Police Impersonation</div>
+</td>
+<td class="py-3.5 px-3 whitespace-nowrap">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-error/10 text-error font-label-sm text-label-sm font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-error animate-ping"></span>
+                    Terminated (Live)
+                  </span>
+</td>
+<td class="py-3.5 pr-4 pl-3 text-right whitespace-nowrap">
+<div class="flex items-center justify-end gap-1">
+<button class="p-1 rounded-md hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors" title="Inspect Spectrogram">
+<span class="material-symbols-outlined text-base" data-icon="graphic_eq">graphic_eq</span>
+</button>
+<button class="p-1 rounded-md hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="Export Audio PCAP">
+<span class="material-symbols-outlined text-base" data-icon="tune">tune</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- ROW 2: Suspicious -->
+<tr class="hover:bg-black/[0.02] transition-colors group">
+<td class="py-3.5 pl-4 pr-1">
+<input class="rounded border-outline-variant text-primary focus:ring-primary/20 w-4 h-4 cursor-pointer" type="checkbox"/>
+</td>
+<td class="py-3.5 px-3 whitespace-nowrap">
+<div class="font-mono-metric text-mono-metric font-semibold text-on-surface">12 Oct, 14:32:04</div>
+<div class="font-mono-metric text-mono-metric text-outline">Call ID: #IN-89297</div>
+</td>
+<td class="py-3.5 px-3 whitespace-nowrap">
+<div class="font-semibold text-on-surface flex items-center gap-1.5">
+                    +91 94140 18299
+                    <span class="material-symbols-outlined text-xs text-secondary" data-icon="record_voice_over">record_voice_over</span>
+</div>
+<div class="text-label-sm font-label-sm text-outline">BSNL • Rajasthan Circle</div>
+</td>
+<td class="py-3.5 px-3 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-label-sm font-label-sm font-semibold bg-secondary/10 border border-secondary/20 text-secondary">
+                      Suspicious
+                    </span>
+<span class="font-mono-metric text-mono-metric font-bold text-secondary">68.7%</span>
+</div>
+<div class="w-24 bg-surface-container-high rounded-full h-1 mt-1.5">
+<div class="bg-secondary h-1 rounded-full" style="width: 68%"></div>
+</div>
+</td>
+<td class="py-3.5 px-3 whitespace-nowrap">
+<span class="inline-flex items-center gap-1 text-label-md font-label-md font-medium text-on-surface">
+                    English (en-IN)
+                  </span>
+<div class="text-label-sm font-label-sm text-outline">Acoustic Artefacts in Jitter</div>
+</td>
+<td class="py-3.5 px-3">
+<span class="inline-flex items-center gap-1 text-on-surface font-medium">
+                    Fake NBFC Loan Pre-approval
+                  </span>
+<div class="text-label-sm font-label-sm text-secondary font-mono-metric">Unregistered Instant Credit</div>
+</td>
+<td class="py-3.5 px-3 whitespace-nowrap">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary/10 text-secondary font-label-sm text-label-sm font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                    Flagged &amp; Injected Noise
+                  </span>
+</td>
+<td class="py-3.5 pr-4 pl-3 text-right whitespace-nowrap">
+<div class="flex items-center justify-end gap-1">
+<button class="p-1 rounded-md hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors" title="Inspect Spectrogram">
+<span class="material-symbols-outlined text-base" data-icon="graphic_eq">graphic_eq</span>
+</button>
+<button class="p-1 rounded-md hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="Export Audio PCAP">
+<span class="material-symbols-outlined text-base" data-icon="tune">tune</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- ROW 3: Safe -->
+<tr class="hover:bg-black/[0.02] transition-colors group">
+<td class="py-3.5 pl-4 pr-1">
+<input class="rounded border-outline-variant text-primary focus:ring-primary/20 w-4 h-4 cursor-pointer" type="checkbox"/>
+</td>
+<td class="py-3.5 px-3 whitespace-nowrap">
+<div class="font-mono-metric text-mono-metric font-semibold text-on-surface">12 Oct, 14:29:45</div>
+<div class="font-mono-metric text-mono-metric text-outline">Call ID: #IN-89294</div>
+</td>
+<td class="py-3.5 px-3 whitespace-nowrap">
+<div class="font-semibold text-on-surface flex items-center gap-1.5">
+                    +91 91100 23145
+                    <span class="material-symbols-outlined text-xs text-tertiary" data-icon="shield_with_heart">shield_with_heart</span>
+</div>
+<div class="text-label-sm font-label-sm text-outline">Jio • Delhi-NCR Circle</div>
+</td>
+<td class="py-3.5 px-3 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-label-sm font-label-sm font-semibold bg-tertiary/10 border border-tertiary/20 text-tertiary">
+                      Safe
+                    </span>
+<span class="font-mono-metric text-mono-metric font-bold text-tertiary">03.1%</span>
+</div>
+<div class="w-24 bg-surface-container-high rounded-full h-1 mt-1.5">
+<div class="bg-tertiary h-1 rounded-full" style="width: 3%"></div>
+</div>
+</td>
+<td class="py-3.5 px-3 whitespace-nowrap">
+<span class="inline-flex items-center gap-1 text-label-md font-label-md font-medium text-on-surface">
+                    Hindi (hi-IN)
+                  </span>
+<div class="text-label-sm font-label-sm text-outline">Verified Organic Harmonics</div>
+</td>
+<td class="py-3.5 px-3">
+<span class="inline-flex items-center gap-1 text-on-surface font-medium">
+                    Legitimate Banking Service
+                  </span>
+<div class="text-label-sm font-label-sm text-outline font-mono-metric">HDFC Registered Telemarketer</div>
+</td>
+<td class="py-3.5 px-3 whitespace-nowrap">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-tertiary/10 text-tertiary font-label-sm text-label-sm font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                    Pass-through Allowed
+                  </span>
+</td>
+<td class="py-3.5 pr-4 pl-3 text-right whitespace-nowrap">
+<div class="flex items-center justify-end gap-1">
+<button class="p-1 rounded-md hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors" title="Inspect Spectrogram">
+<span class="material-symbols-outlined text-base" data-icon="graphic_eq">graphic_eq</span>
+</button>
+<button class="p-1 rounded-md hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="Export Audio PCAP">
+<span class="material-symbols-outlined text-base" data-icon="tune">tune</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- ROW 4: High Risk -->
+<tr class="hover:bg-black/[0.02] transition-colors group">
+<td class="py-3.5 pl-4 pr-1">
+<input class="rounded border-outline-variant text-primary focus:ring-primary/20 w-4 h-4 cursor-pointer" type="checkbox"/>
+</td>
+<td class="py-3.5 px-3 whitespace-nowrap">
+<div class="font-mono-metric text-mono-metric font-semibold text-on-surface">12 Oct, 14:15:10</div>
+<div class="font-mono-metric text-mono-metric text-outline">Call ID: #IN-89289</div>
+</td>
+<td class="py-3.5 px-3 whitespace-nowrap">
+<div class="font-semibold text-on-surface flex items-center gap-1.5">
+                    +91 99882 10922
+                    <span class="material-symbols-outlined text-xs text-error" data-icon="crisis_alert">crisis_alert</span>
+</div>
+<div class="text-label-sm font-label-sm text-outline">Vodafone Idea • Gujarat Circle</div>
+</td>
+<td class="py-3.5 px-3 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-label-sm font-label-sm font-semibold bg-error/10 border border-error/20 text-error">
+                      High Risk
+                    </span>
+<span class="font-mono-metric text-mono-metric font-bold text-error">89.4%</span>
+</div>
+<div class="w-24 bg-surface-container-high rounded-full h-1 mt-1.5">
+<div class="bg-error h-1 rounded-full" style="width: 89%"></div>
+</div>
+</td>
+<td class="py-3.5 px-3 whitespace-nowrap">
+<span class="inline-flex items-center gap-1 text-label-md font-label-md font-medium text-on-surface">
+                    Gujarati (gu-IN)
+                  </span>
+<div class="text-label-sm font-label-sm text-outline">ElevenLabs Voice Model v2</div>
+</td>
+<td class="py-3.5 px-3">
+<span class="inline-flex items-center gap-1 text-on-surface font-medium">
+                    KYC Expiry Urgency
+                  </span>
+<div class="text-label-sm font-label-sm text-error/90 font-mono-metric">SIM Deactivation Warning</div>
+</td>
+<td class="py-3.5 px-3 whitespace-nowrap">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-error/10 text-error font-label-sm text-label-sm font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-error animate-ping"></span>
+                    Terminated (Live)
+                  </span>
+</td>
+<td class="py-3.5 pr-4 pl-3 text-right whitespace-nowrap">
+<div class="flex items-center justify-end gap-1">
+<button class="p-1 rounded-md hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors" title="Inspect Spectrogram">
+<span class="material-symbols-outlined text-base" data-icon="graphic_eq">graphic_eq</span>
+</button>
+<button class="p-1 rounded-md hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="Export Audio PCAP">
+<span class="material-symbols-outlined text-base" data-icon="tune">tune</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- ROW 5: Suspicious -->
+<tr class="hover:bg-black/[0.02] transition-colors group">
+<td class="py-3.5 pl-4 pr-1">
+<input class="rounded border-outline-variant text-primary focus:ring-primary/20 w-4 h-4 cursor-pointer" type="checkbox"/>
+</td>
+<td class="py-3.5 px-3 whitespace-nowrap">
+<div class="font-mono-metric text-mono-metric font-semibold text-on-surface">12 Oct, 13:58:33</div>
+<div class="font-mono-metric text-mono-metric text-outline">Call ID: #IN-89281</div>
+</td>
+<td class="py-3.5 px-3 whitespace-nowrap">
+<div class="font-semibold text-on-surface flex items-center gap-1.5">
+                    +91 97412 00392
+                    <span class="material-symbols-outlined text-xs text-secondary" data-icon="record_voice_over">record_voice_over</span>
+</div>
+<div class="text-label-sm font-label-sm text-outline">Airtel • Karnataka Circle</div>
+</td>
+<td class="py-3.5 px-3 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-label-sm font-label-sm font-semibold bg-secondary/10 border border-secondary/20 text-secondary">
+                      Suspicious
+                    </span>
+<span class="font-mono-metric text-mono-metric font-bold text-secondary">54.0%</span>
+</div>
+<div class="w-24 bg-surface-container-high rounded-full h-1 mt-1.5">
+<div class="bg-secondary h-1 rounded-full" style="width: 54%"></div>
+</div>
+</td>
+<td class="py-3.5 px-3 whitespace-nowrap">
+<span class="inline-flex items-center gap-1 text-label-md font-label-md font-medium text-on-surface">
+                    Kannada (kn-IN)
+                  </span>
+<div class="text-label-sm font-label-sm text-outline">Robocall Soundboard Trigger</div>
+</td>
+<td class="py-3.5 px-3">
+<span class="inline-flex items-center gap-1 text-on-surface font-medium">
+                    Lottery / Tax Impersonation
+                  </span>
+<div class="text-label-sm font-label-sm text-secondary font-mono-metric">Prize Claim Verification</div>
+</td>
+<td class="py-3.5 px-3 whitespace-nowrap">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container text-on-surface font-label-sm text-label-sm font-medium">
+<span class="w-1.5 h-1.5 rounded-full bg-outline"></span>
+                    IVR Intercept Prompt
+                  </span>
+</td>
+<td class="py-3.5 pr-4 pl-3 text-right whitespace-nowrap">
+<div class="flex items-center justify-end gap-1">
+<button class="p-1 rounded-md hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors" title="Inspect Spectrogram">
+<span class="material-symbols-outlined text-base" data-icon="graphic_eq">graphic_eq</span>
+</button>
+<button class="p-1 rounded-md hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="Export Audio PCAP">
+<span class="material-symbols-outlined text-base" data-icon="tune">tune</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- ROW 6: Safe -->
+<tr class="hover:bg-black/[0.02] transition-colors group">
+<td class="py-3.5 pl-4 pr-1">
+<input class="rounded border-outline-variant text-primary focus:ring-primary/20 w-4 h-4 cursor-pointer" type="checkbox"/>
+</td>
+<td class="py-3.5 px-3 whitespace-nowrap">
+<div class="font-mono-metric text-mono-metric font-semibold text-on-surface">12 Oct, 13:45:19</div>
+<div class="font-mono-metric text-mono-metric text-outline">Call ID: #IN-89274</div>
+</td>
+<td class="py-3.5 px-3 whitespace-nowrap">
+<div class="font-semibold text-on-surface flex items-center gap-1.5">
+                    +91 93214 78819
+                    <span class="material-symbols-outlined text-xs text-tertiary" data-icon="shield_with_heart">shield_with_heart</span>
+</div>
+<div class="text-label-sm font-label-sm text-outline">Reliance Jio • Maharashtra Circle</div>
+</td>
+<td class="py-3.5 px-3 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-label-sm font-label-sm font-semibold bg-tertiary/10 border border-tertiary/20 text-tertiary">
+                      Safe
+                    </span>
+<span class="font-mono-metric text-mono-metric font-bold text-tertiary">01.8%</span>
+</div>
+<div class="w-24 bg-surface-container-high rounded-full h-1 mt-1.5">
+<div class="bg-tertiary h-1 rounded-full" style="width: 2%"></div>
+</div>
+</td>
+<td class="py-3.5 px-3 whitespace-nowrap">
+<span class="inline-flex items-center gap-1 text-label-md font-label-md font-medium text-on-surface">
+                    Marathi (mr-IN)
+                  </span>
+<div class="text-label-sm font-label-sm text-outline">Natural Glottal Pulse Signature</div>
+</td>
+<td class="py-3.5 px-3">
+<span class="inline-flex items-center gap-1 text-on-surface font-medium">
+                    Corporate Utility Alert
+                  </span>
+<div class="text-label-sm font-label-sm text-outline font-mono-metric">MSEDCL Power Scheduled Outage</div>
+</td>
+<td class="py-3.5 px-3 whitespace-nowrap">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-tertiary/10 text-tertiary font-label-sm text-label-sm font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                    Pass-through Allowed
+                  </span>
+</td>
+<td class="py-3.5 pr-4 pl-3 text-right whitespace-nowrap">
+<div class="flex items-center justify-end gap-1">
+<button class="p-1 rounded-md hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors" title="Inspect Spectrogram">
+<span class="material-symbols-outlined text-base" data-icon="graphic_eq">graphic_eq</span>
+</button>
+<button class="p-1 rounded-md hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="Export Audio PCAP">
+<span class="material-symbols-outlined text-base" data-icon="tune">tune</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Spreadsheet Pagination Bar (macOS Sonoma / iPadOS Elegance) -->
+<div class="py-3 px-4 bg-surface-container-low/60 border-t border-black/[0.05] flex flex-col sm:flex-row items-center justify-between gap-3">
+<div class="flex items-center gap-2 font-label-md text-label-md text-on-surface-variant">
+<span>Showing <strong class="text-on-surface font-semibold">1 - 6</strong> of 1,420 intercepts</span>
+<span class="text-outline">•</span>
+<span class="font-mono-metric text-mono-metric text-outline">Batch Buffer: synced</span>
+</div>
+<!-- Pagination Controls -->
+<div class="flex items-center gap-1.5">
+<button class="p-1 rounded-md bg-surface-container hover:bg-surface-container-high text-on-surface-variant active:scale-95 transition-all disabled:opacity-40" disabled="">
+<span class="material-symbols-outlined text-base" data-icon="tune">tune</span>
+</button>
+<div class="flex items-center gap-1 font-label-md text-label-md">
+<button class="w-7 h-7 rounded-[6px] bg-primary text-on-primary font-semibold flex items-center justify-center shadow-xs">1</button>
+<button class="w-7 h-7 rounded-[6px] hover:bg-surface-container-high text-on-surface-variant flex items-center justify-center transition-colors">2</button>
+<button class="w-7 h-7 rounded-[6px] hover:bg-surface-container-high text-on-surface-variant flex items-center justify-center transition-colors">3</button>
+<span class="px-1 text-outline">...</span>
+<button class="w-7 h-7 rounded-[6px] hover:bg-surface-container-high text-on-surface-variant flex items-center justify-center transition-colors">237</button>
+</div>
+<button class="p-1 rounded-md bg-surface-container hover:bg-surface-container-high text-on-surface active:scale-95 transition-all">
+<span class="material-symbols-outlined text-base" data-icon="tune">tune</span>
+</button>
+</div>
+</div>
+</section>
+<!-- ===================================================================== -->
+<!-- SECTION 5: BOTTOM REGULATORY COMPLIANCE BAR                           -->
+<!-- ===================================================================== -->
+<footer class="mt-2 mb-4 py-3 px-4 rounded-xl bg-surface-container-low/70 border border-black/[0.04] flex flex-col sm:flex-row items-center justify-between gap-3 text-label-sm font-label-sm text-outline">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-base" data-icon="shield_with_heart" style="font-variation-settings: 'FILL' 1;">shield_with_heart</span>
+<span class="text-on-surface-variant">
+            Compliant with TRAI TCCCPR regulations &amp; RBI Cybersecurity Framework for Digital Lending.
+          </span>
+</div>
+<div class="flex items-center gap-4 text-mono-metric font-mono-metric">
+<span class="inline-flex items-center gap-1 text-on-surface">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+            Zero PII Stored
+          </span>
+<span class="text-outline">AES-GCM-256 Telemetry Encryption</span>
+</div>
+</footer>
+</div>
+</main>
+</body></html>

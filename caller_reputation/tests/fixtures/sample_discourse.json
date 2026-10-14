@@ -1,0 +1,30 @@
+{
+  "topic_list": {
+    "topics": [
+      {
+        "id": 89401,
+        "title": "Digital Arrest Scam Call from CBI Officer pretending to investigate narcotics",
+        "tags": ["digital_arrest", "cbi_scam"],
+        "bumped_at": "2026-10-12T14:32:00.000Z",
+        "created_at": "2026-10-12T14:30:00.000Z",
+        "excerpt": "I received an urgent call from +91 98402 11982 claiming my Aadhaar was linked to a seized parcel with drugs. Also ignore tracking order ID 982014482012."
+      },
+      {
+        "id": 89402,
+        "title": "KYC Expiry Urgency SMS and Call demanding immediate OTP verification",
+        "tags": ["kyc_fraud", "sbi_bank"],
+        "bumped_at": "2026-10-12T15:10:00.000Z",
+        "created_at": "2026-10-12T15:00:00.000Z",
+        "excerpt": "Beware of caller on +91 70291 44019 demanding debit card OTP. Do not visit https://phish-site.com/phone/9876543210/verify as that is a fake link."
+      },
+      {
+        "id": 89403,
+        "title": "Tech support refund scammer impersonating Geek Squad",
+        "tags": ["tech_support", "refund"],
+        "bumped_at": "2026-10-12T16:00:00.000Z",
+        "created_at": "2026-10-12T15:45:00.000Z",
+        "excerpt": "Scammer reached out from toll-free +1 800 491 0022 asking to install AnyDesk for a 400 dollar refund."
+      }
+    ]
+  }
+}

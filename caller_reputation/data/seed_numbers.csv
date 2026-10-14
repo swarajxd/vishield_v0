@@ -1,0 +1,7 @@
+# number,category,count,source
+# Add numbers from public datasets / scam-awareness posts:
+number,category,count,source
++919820144820,digital_arrest,15,community
++919414018299,fake_loan,8,community
++918000211982,kyc,12,trai_feed
++919934155621,lottery,6,scammer.info

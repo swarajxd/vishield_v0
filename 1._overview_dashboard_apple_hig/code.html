@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+
+<html class="h-full bg-surface" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sentinel Evaluator - Vishing Defense Node</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "surface-container-low": "#f4f3f8",
+            "outline-variant": "#c1c6d7",
+            "on-error-container": "#93000a",
+            "background": "#faf8fe",
+            "inverse-surface": "#2f3034",
+            "on-primary-fixed-variant": "#004493",
+            "primary-container": "#0070eb",
+            "on-surface-variant": "#414755",
+            "on-secondary-fixed-variant": "#3631b4",
+            "secondary-container": "#6664e4",
+            "outline": "#717786",
+            "on-secondary-container": "#fffbff",
+            "inverse-on-surface": "#f1f0f5",
+            "surface-container-highest": "#e3e2e7",
+            "surface-container-lowest": "#ffffff",
+            "tertiary-container": "#008733",
+            "primary-fixed-dim": "#adc6ff",
+            "surface-variant": "#e3e2e7",
+            "inverse-primary": "#adc6ff",
+            "surface-bright": "#faf8fe",
+            "on-tertiary-container": "#f7fff2",
+            "surface-container-high": "#e9e7ed",
+            "primary": "#0058bc",
+            "secondary-fixed": "#e2dfff",
+            "secondary": "#4c4aca",
+            "surface-container": "#eeedf3",
+            "tertiary-fixed-dim": "#53e16f",
+            "on-secondary": "#ffffff",
+            "error": "#ba1a1a",
+            "on-background": "#1a1b1f",
+            "tertiary-fixed": "#72fe88",
+            "on-tertiary-fixed": "#002107",
+            "on-primary-container": "#fefcff",
+            "on-surface": "#1a1b1f",
+            "on-primary": "#ffffff",
+            "primary-fixed": "#d8e2ff",
+            "on-error": "#ffffff",
+            "surface-tint": "#005bc1",
+            "on-tertiary-fixed-variant": "#00531c",
+            "on-secondary-fixed": "#0c006a",
+            "surface": "#faf8fe",
+            "surface-dim": "#dad9df",
+            "tertiary": "#006b27",
+            "secondary-fixed-dim": "#c2c1ff",
+            "error-container": "#ffdad6",
+            "on-tertiary": "#ffffff",
+            "on-primary-fixed": "#001a41"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "gutter": "1.5rem",
+            "margin-mobile": "1.25rem",
+            "space-xs": "0.25rem",
+            "margin": "2.5rem",
+            "space-md": "1rem",
+            "space-sm": "0.5rem",
+            "gutter-mobile": "1rem",
+            "space-lg": "1.5rem",
+            "space-xl": "2.5rem"
+          },
+          "fontFamily": {
+            "headline-lg-mobile": ["Inter"],
+            "body-lg": ["Inter"],
+            "headline-md": ["Inter"],
+            "mono-metric": ["JetBrains Mono"],
+            "headline-lg": ["Inter"],
+            "title": ["Inter"],
+            "label-sm": ["Inter"],
+            "headline-sm": ["Inter"],
+            "body-md": ["Inter"],
+            "label-md": ["Inter"],
+            "display-lg-mobile": ["Inter"],
+            "display-lg": ["Inter"]
+          },
+          "fontSize": {
+            "headline-lg-mobile": ["26px", {"lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "700"}],
+            "body-lg": ["17px", {"lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "400"}],
+            "headline-md": ["28px", {"lineHeight": "34px", "letterSpacing": "-0.015em", "fontWeight": "600"}],
+            "mono-metric": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+            "headline-lg": ["34px", {"lineHeight": "41px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "title": ["20px", {"lineHeight": "25px", "letterSpacing": "-0.008em", "fontWeight": "600"}],
+            "label-sm": ["11px", {"lineHeight": "13px", "letterSpacing": "0.04em", "fontWeight": "600"}],
+            "headline-sm": ["22px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+            "body-md": ["15px", {"lineHeight": "21px", "letterSpacing": "0em", "fontWeight": "400"}],
+            "label-md": ["13px", {"lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+            "display-lg-mobile": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.025em", "fontWeight": "700"}],
+            "display-lg": ["56px", {"lineHeight": "64px", "letterSpacing": "-0.03em", "fontWeight": "700"}]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .material-symbols-outlined.fill {
+      font-variation-settings: 'FILL' 1;
+    }
+  </style>
+</head>
+<body class="h-full bg-surface text-on-surface antialiased overflow-x-hidden selection:bg-primary-fixed selection:text-on-primary-fixed-variant">
+<!-- ================= SIDEBAR COMPONENT (FROM SHARED COMPONENTS JSON) ================= -->
+<aside class="fixed top-0 left-0 bottom-0 z-40 p-space-md h-screen w-72 flex flex-col justify-between shrink-0 bg-surface-container-lowest/80 dark:bg-inverse-surface/80 backdrop-blur-xl border-r border-outline-variant/30 dark:border-outline/20 shadow-sm dark:shadow-none">
+<div class="flex flex-col gap-6">
+<!-- Brand Crest & Header -->
+<div class="flex items-center gap-3 px-2 pt-2">
+<div class="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center border border-outline-variant/30 shadow-sm">
+<span class="material-symbols-outlined text-primary fill" data-icon="shield_with_heart" style="font-variation-settings: 'FILL' 1;">shield_with_heart</span>
+</div>
+<div>
+<h1 class="font-title text-title font-semibold text-on-surface dark:text-inverse-on-surface tracking-tight leading-none">Sentinel Evaluator</h1>
+<p class="font-mono-metric text-mono-metric text-outline mt-1 leading-none">Vishing Defense Node v4.2</p>
+</div>
+</div>
+<!-- Main Navigation Links -->
+<nav class="flex flex-col gap-1">
+<!-- 1. Live Stream Analysis (ACTIVE DESTINATION) -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 dark:bg-primary-container/20 text-primary dark:text-inverse-primary font-semibold transition-all active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined" data-icon="graphic_eq">graphic_eq</span>
+<span class="font-label-md text-label-md">Live Stream Analysis</span>
+</a>
+<!-- 2. Incident Telemetry -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant dark:text-outline-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:bg-surface-container-high/60 dark:hover:bg-surface-variant/20 transition-all active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined" data-icon="crisis_alert">crisis_alert</span>
+<span class="font-label-md text-label-md">Incident Telemetry</span>
+</a>
+<!-- 3. Acoustic Baselines -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant dark:text-outline-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:bg-surface-container-high/60 dark:hover:bg-surface-variant/20 transition-all active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined" data-icon="multiline_chart">multiline_chart</span>
+<span class="font-label-md text-label-md">Acoustic Baselines</span>
+</a>
+<!-- 4. Synthetic Voice Log -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant dark:text-outline-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:bg-surface-container-high/60 dark:hover:bg-surface-variant/20 transition-all active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined" data-icon="record_voice_over">record_voice_over</span>
+<span class="font-label-md text-label-md">Synthetic Voice Log</span>
+</a>
+<!-- 5. Threat Intelligence -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant dark:text-outline-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:bg-surface-container-high/60 dark:hover:bg-surface-variant/20 transition-all active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined" data-icon="shield_with_heart">shield_with_heart</span>
+<span class="font-label-md text-label-md">Threat Intelligence</span>
+</a>
+<!-- 6. Security Policies -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant dark:text-outline-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:bg-surface-container-high/60 dark:hover:bg-surface-variant/20 transition-all active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined" data-icon="tune">tune</span>
+<span class="font-label-md text-label-md">Security Policies</span>
+</a>
+</nav>
+</div>
+<!-- Bottom Actions & Secondary Nav -->
+<div class="flex flex-col gap-3 pt-4 border-t border-outline-variant/30 dark:border-outline/20">
+<!-- Emergency Killswitch CTA -->
+<button class="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-error/10 hover:bg-error/15 text-error border border-error/20 font-label-md text-label-md font-semibold transition-all active:scale-[0.98]">
+<span class="w-2 h-2 rounded-full bg-error animate-pulse"></span>
+        Emergency Killswitch
+      </button>
+<!-- Footer Nav Tabs -->
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant dark:text-outline-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:bg-surface-container-high/60 dark:hover:bg-surface-variant/20 transition-all active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined" data-icon="health_and_safety">health_and_safety</span>
+<span class="font-label-md text-label-md">Engine Diagnostics</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant dark:text-outline-variant hover:text-on-surface dark:hover:text-inverse-on-surface hover:bg-surface-container-high/60 dark:hover:bg-surface-variant/20 transition-all active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</nav>
+</div>
+</aside>
+<!-- ================= TOP NAV BAR COMPONENT (FROM SHARED COMPONENTS JSON) ================= -->
+<header class="docked full-width top-0 sticky z-30 bg-surface/75 dark:bg-inverse-surface/75 backdrop-blur-md border-b border-outline-variant/30 dark:border-outline/20 shadow-none">
+<div class="flex justify-between items-center w-full px-space-lg py-space-sm pl-80">
+<!-- Search & Stream Filter Links -->
+<div class="flex items-center gap-6 flex-1 max-w-2xl">
+<!-- ⌘K Spotlight Input -->
+<div class="relative w-80">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-outline">
+<span class="material-symbols-outlined text-[18px]">search</span>
+</div>
+<input class="w-full pl-9 pr-14 py-1.5 bg-surface-container-low border border-outline-variant/30 rounded-xl font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" placeholder="Search callers, acoustic vectors, flags..." type="text"/>
+<div class="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
+<kbd class="px-1.5 py-0.5 text-[10px] font-mono-metric text-outline bg-surface-container-highest/60 rounded border border-outline-variant/30">⌘K</kbd>
+</div>
+</div>
+<!-- Navigation Links Segment -->
+<div class="hidden lg:flex items-center gap-6">
+<a class="text-primary dark:text-inverse-primary font-semibold border-b-2 border-primary dark:border-inverse-primary pb-2 font-label-md text-label-md" href="#">All Streams</a>
+<a class="text-on-surface-variant dark:text-outline-variant hover:text-on-surface dark:hover:text-inverse-on-surface pb-2 font-medium font-label-md text-label-md transition-colors" href="#">Live Priority</a>
+<a class="text-on-surface-variant dark:text-outline-variant hover:text-on-surface dark:hover:text-inverse-on-surface pb-2 font-medium font-label-md text-label-md transition-colors" href="#">Flagged Synthetic</a>
+<a class="text-on-surface-variant dark:text-outline-variant hover:text-on-surface dark:hover:text-inverse-on-surface pb-2 font-medium font-label-md text-label-md transition-colors" href="#">Archived Logs</a>
+</div>
+</div>
+<!-- Trailing Controls & Operator Avatar -->
+<div class="flex items-center gap-3 shrink-0">
+<!-- System Segmented Control: Realtime | Hourly | Daily -->
+<div class="inline-flex p-1 bg-surface-container border border-outline-variant/30 rounded-xl text-on-surface-variant">
+<button class="px-3 py-1 font-label-md text-label-md font-semibold bg-surface-container-lowest text-on-surface rounded-lg shadow-sm transition-all">Realtime</button>
+<button class="px-3 py-1 font-label-md text-label-md font-medium hover:text-on-surface rounded-lg transition-all">Hourly</button>
+<button class="px-3 py-1 font-label-md text-label-md font-medium hover:text-on-surface rounded-lg transition-all">Daily</button>
+</div>
+<!-- Date Range Picker Pill -->
+<button class="flex items-center gap-2 px-3 py-1.5 bg-surface-container-lowest border border-outline-variant/30 rounded-xl text-on-surface font-label-md text-label-md hover:bg-surface-container-high transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined text-[16px] text-outline">calendar_today</span>
+<span>Today, 24 Oct</span>
+<span class="material-symbols-outlined text-[16px] text-outline">expand_more</span>
+</button>
+<div class="h-4 w-px bg-outline-variant/40 mx-1"></div>
+<!-- Trailing Action: Deploy Active Probe -->
+<button class="px-3 py-1.5 bg-primary text-on-primary rounded-xl font-label-md text-label-md font-semibold hover:brightness-105 active:scale-[0.98] transition-all flex items-center gap-1.5 shadow-sm">
+<span class="material-symbols-outlined text-[16px]">sensors</span>
+<span>Deploy Active Probe</span>
+</button>
+<!-- Secondary Action: Export Telemetry -->
+<button class="p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-xl transition-all" title="Export Telemetry">
+<span class="material-symbols-outlined" data-icon="tune">tune</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-xl transition-all relative" title="Notifications">
+<span class="material-symbols-outlined" data-icon="notifications_active">notifications_active</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-error ring-2 ring-surface"></span>
+</button>
+<!-- Operator Profile -->
+<div class="flex items-center pl-2">
+<div class="relative w-8 h-8 rounded-full overflow-hidden ring-2 ring-outline-variant/30">
+<img class="w-full h-full object-cover" data-alt="A portrait photograph of a Chief Security Operations Officer in a modern dark room illuminated by ambient blue status monitors and refined studio lighting. The operator exudes calm authority, professionalism, and high assurance cryptographic integrity in a minimalist high-tech cybersecurity center." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQ2tPMYjFeBtJgt2HYzJ8JRWRAGK26cpXbieCRPLTVOopJh8D1OxhWO9Ea7S-fDDrReGLcyAZy2hU215dFCHEF03MT7vu5ckrkFGuV79QHakqj_2xJqUa5b5g72Sxr1LuvbgK9JR1VVefBZ5XJAn56JhsaNYz9yFG_MMjn031T_RmJHY-dFfB8Ba9rGeQLLeIbhuXnml3xo4ka5LMMP9y0N-q0Bd2ekepJcFQAqOQ06jn5MkSeUmgg-g"/>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-tertiary ring-1 ring-surface-container-lowest"></span>
+</div>
+</div>
+</div>
+</div>
+</header>
+<!-- ================= MAIN DASHBOARD CANVAS ================= -->
+<main class="pl-80 pr-space-lg py-space-lg flex flex-col gap-6 max-w-[1440px]">
+<!-- Hero / Headline Bar -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div>
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-tertiary-container/10 border border-tertiary-container/20 text-tertiary font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-ping"></span>
+            ACTIVE DEFENSE MESH
+          </span>
+<span class="font-mono-metric text-mono-metric text-outline">Node #US-EAST-4B</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface tracking-tight mt-1">Autonomous Telephony Threat Matrix</h2>
+</div>
+<!-- Quick Toggles -->
+<div class="flex items-center gap-4 bg-surface-container-lowest border border-outline-variant/30 px-4 py-2 rounded-2xl shadow-sm">
+<div class="flex items-center gap-2">
+<span class="font-label-md text-label-md text-on-surface-variant">Deepfake Audio Interceptor</span>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-9 h-5 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface-container-lowest after:border-outline-variant/40 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="h-4 w-px bg-outline-variant/40"></div>
+<div class="flex items-center gap-2">
+<span class="font-label-md text-label-md text-on-surface-variant">Auto-Drop High Risk</span>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-9 h-5 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface-container-lowest after:border-outline-variant/40 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+</div>
+<!-- ================= 4 HERO METRIC CARDS (APPLE HIG RIGOR) ================= -->
+<section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+<!-- KPI 1: Calls Analyzed -->
+<div class="bg-surface-container-lowest p-space-lg rounded-2xl border border-outline-variant/30 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:border-outline-variant/60 transition-all flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-outline">Calls Analyzed</span>
+<span class="p-2 rounded-xl bg-surface-container-low text-primary">
+<span class="material-symbols-outlined text-[18px]">call</span>
+</span>
+</div>
+<div class="mt-4">
+<div class="font-headline-lg text-headline-lg font-bold tracking-tight text-on-surface">14,892</div>
+<div class="flex items-center gap-2 mt-2">
+<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-tertiary-container/15 text-tertiary font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+              +12.4% vs last week
+            </span>
+<span class="font-mono-metric text-mono-metric text-outline">320/min</span>
+</div>
+</div>
+</div>
+<!-- KPI 2: High-Risk Blocked -->
+<div class="bg-surface-container-lowest p-space-lg rounded-2xl border border-outline-variant/30 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:border-outline-variant/60 transition-all flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-outline">High-Risk Blocked</span>
+<span class="p-2 rounded-xl bg-error-container/20 text-error">
+<span class="material-symbols-outlined text-[18px]">phone_disabled</span>
+</span>
+</div>
+<div class="mt-4">
+<div class="font-headline-lg text-headline-lg font-bold tracking-tight text-error">1,248</div>
+<div class="flex items-center gap-2 mt-2">
+<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-error-container/30 text-error font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[14px]">arrow_drop_up</span>
+              +18.2% flagged
+            </span>
+<span class="font-mono-metric text-mono-metric text-on-surface-variant font-semibold">99.1% interception</span>
+</div>
+</div>
+</div>
+<!-- KPI 3: Average Risk Score -->
+<div class="bg-surface-container-lowest p-space-lg rounded-2xl border border-outline-variant/30 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:border-outline-variant/60 transition-all flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-outline">Average Risk Score</span>
+<span class="p-2 rounded-xl bg-primary/10 text-primary">
+<span class="material-symbols-outlined text-[18px]">speed</span>
+</span>
+</div>
+<div class="mt-4">
+<div class="font-headline-lg text-headline-lg font-bold tracking-tight text-on-surface">34.2%</div>
+<div class="flex items-center gap-2 mt-2">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface font-label-sm text-label-sm font-medium">
+              Safe Baseline
+            </span>
+<span class="font-mono-metric text-mono-metric text-tertiary">Normal variance</span>
+</div>
+</div>
+</div>
+<!-- KPI 4: Guardian Alerts Dispatched -->
+<div class="bg-surface-container-lowest p-space-lg rounded-2xl border border-outline-variant/30 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:border-outline-variant/60 transition-all flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-outline">Guardian Alerts Dispatched</span>
+<span class="p-2 rounded-xl bg-secondary/10 text-secondary">
+<span class="material-symbols-outlined text-[18px]">shield</span>
+</span>
+</div>
+<div class="mt-4">
+<div class="font-headline-lg text-headline-lg font-bold tracking-tight text-on-surface">894</div>
+<div class="flex items-center gap-2 mt-2">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-secondary-fixed/50 text-on-secondary-fixed-variant font-label-sm text-label-sm font-semibold">
+              100% delivered &lt;3s
+            </span>
+<span class="font-mono-metric text-mono-metric text-outline">94.6% acknowledged</span>
+</div>
+</div>
+</div>
+</section>
+<!-- ================= DATA VISUALIZATIONS SECTION ================= -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+<!-- LEFT VISUAL CARD: Risk Distribution Over Time (Bezier Waves + Floating Tooltip) -->
+<div class="lg:col-span-8 bg-surface-container-lowest p-space-lg rounded-2xl border border-outline-variant/30 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex flex-col justify-between relative overflow-hidden">
+<div>
+<div class="flex items-center justify-between pb-4 border-b border-outline-variant/20">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Risk Distribution Over Time</h3>
+<p class="font-body-md text-body-md text-outline mt-0.5">24-hour continuous acoustic signal &amp; threat telemetry</p>
+</div>
+<!-- Legend Indicators -->
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1.5 font-label-sm text-label-sm text-on-surface-variant">
+<span class="w-2.5 h-2.5 rounded-full bg-primary"></span>
+                Safe Traffic
+              </div>
+<div class="flex items-center gap-1.5 font-label-sm text-label-sm text-on-surface-variant">
+<span class="w-2.5 h-2.5 rounded-full bg-secondary"></span>
+                Suspicious Patterns
+              </div>
+<div class="flex items-center gap-1.5 font-label-sm text-label-sm text-on-surface-variant">
+<span class="w-2.5 h-2.5 rounded-full bg-error"></span>
+                High Risk Exploits
+              </div>
+</div>
+</div>
+<!-- SVG Chart Area -->
+<div class="relative mt-6 h-64 w-full">
+<!-- Background Grid Lines -->
+<div class="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-30">
+<div class="border-b border-outline-variant/40 w-full h-0"></div>
+<div class="border-b border-outline-variant/40 w-full h-0"></div>
+<div class="border-b border-outline-variant/40 w-full h-0"></div>
+<div class="border-b border-outline-variant/40 w-full h-0"></div>
+</div>
+<!-- Waveform Canvas -->
+<svg class="w-full h-full overflow-visible" preserveaspectratio="none" viewbox="0 0 700 240">
+<defs>
+<!-- Gradients for subtle Apple Health Area Fills -->
+<lineargradient id="grad-safe" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#0058bc" stop-opacity="0.18"></stop>
+<stop offset="100%" stop-color="#0058bc" stop-opacity="0.0"></stop>
+</lineargradient>
+<lineargradient id="grad-high" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#ba1a1a" stop-opacity="0.22"></stop>
+<stop offset="100%" stop-color="#ba1a1a" stop-opacity="0.0"></stop>
+</lineargradient>
+</defs>
+<!-- Safe Area and Line -->
+<path d="M0,170 C100,150 180,180 260,140 C340,100 420,130 500,90 C580,50 640,80 700,70 L700,240 L0,240 Z" fill="url(#grad-safe)"></path>
+<path d="M0,170 C100,150 180,180 260,140 C340,100 420,130 500,90 C580,50 640,80 700,70" fill="none" stroke="#0058bc" stroke-linecap="round" stroke-width="2.5"></path>
+<!-- Suspicious Line -->
+<path d="M0,210 C120,200 200,190 300,175 C390,160 450,145 520,130 C600,110 650,135 700,120" fill="none" stroke="#4c4aca" stroke-dasharray="4 4" stroke-linecap="round" stroke-width="2"></path>
+<!-- High Risk Spike Area and Line -->
+<path d="M0,230 C110,225 210,215 310,205 C380,195 410,130 450,85 C490,135 550,190 700,200 L700,240 L0,240 Z" fill="url(#grad-high)"></path>
+<path d="M0,230 C110,225 210,215 310,205 C380,195 410,130 450,85 C490,135 550,190 700,200" fill="none" stroke="#ba1a1a" stroke-linecap="round" stroke-width="2.5"></path>
+<!-- Peak Active Anchor Dot at 14:30 -->
+<circle cx="450" cy="85" fill="#ba1a1a" r="5" stroke="#ffffff" stroke-width="2.5"></circle>
+<!-- Timeline vertical ruler line -->
+<line opacity="0.6" stroke="#ba1a1a" stroke-dasharray="2 3" stroke-width="1" x1="450" x2="450" y1="0" y2="240"></line>
+</svg>
+<!-- Sleek Interactive Hover Tooltip: Apple Frosted HUD Style -->
+<div class="absolute left-[56%] top-6 transform -translate-x-1/2 bg-surface-container-lowest/90 dark:bg-inverse-surface/90 backdrop-blur-xl border border-outline-variant/40 rounded-xl px-3.5 py-2.5 shadow-xl pointer-events-none transition-all">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-error animate-ping"></span>
+<span class="font-label-md text-label-md font-bold text-on-surface">14:00 - 15:00 IST Peak Rush</span>
+</div>
+<div class="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 font-mono-metric text-mono-metric">
+<span class="text-outline">High-Risk Spikes:</span>
+<span class="text-error font-semibold text-right">412 calls</span>
+<span class="text-outline">Synthetic Clones:</span>
+<span class="text-secondary font-semibold text-right">78.4% match</span>
+<span class="text-outline">Auto-Dropped:</span>
+<span class="text-tertiary font-semibold text-right">408 blocks</span>
+</div>
+</div>
+</div>
+<!-- X-Axis Timeline Markers -->
+<div class="flex justify-between items-center mt-3 text-outline font-mono-metric text-mono-metric px-1">
+<span>00:00</span>
+<span>04:00</span>
+<span>08:00</span>
+<span class="text-on-surface font-semibold">14:30 Peak</span>
+<span>18:00</span>
+<span>22:00</span>
+</div>
+</div>
+<div class="flex items-center justify-between pt-4 mt-2 border-t border-outline-variant/20 font-label-md text-label-md">
+<div class="flex items-center gap-2 text-outline">
+<span class="material-symbols-outlined text-[16px]">info</span>
+<span>Telemetry calculated across 48 telephony carrier trunks via real-time SIP RTP mirrors.</span>
+</div>
+<button class="text-primary font-semibold hover:underline flex items-center gap-1">
+<span>Inspect Vector Matrix</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- RIGHT VISUAL CARD: Scam Category Breakdown (Apple Fitness-Grade Concentric Rings) -->
+<div class="lg:col-span-4 bg-surface-container-lowest p-space-lg rounded-2xl border border-outline-variant/30 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex flex-col justify-between">
+<div>
+<div class="pb-3 border-b border-outline-variant/20 flex items-center justify-between">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Scam Breakdown</h3>
+<span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm">Active Patterns</span>
+</div>
+<!-- Concentric Ring Visualizer -->
+<div class="relative flex items-center justify-center my-6">
+<svg class="w-52 h-52 -rotate-90 transform" viewbox="0 0 200 200">
+<!-- Ring 1: Bank KYC (42%) - Circumference 2*pi*85 = 534.07 -->
+<circle cx="100" cy="100" fill="none" r="85" stroke="#e9e7ed" stroke-width="9"></circle>
+<circle cx="100" cy="100" fill="none" r="85" stroke="#0058bc" stroke-dasharray="534.07" stroke-dashoffset="309.76" stroke-linecap="round" stroke-width="9"></circle>
+<!-- Ring 2: CBI / Police Threat (26%) - Circumference 2*pi*72 = 452.39 -->
+<circle cx="100" cy="100" fill="none" r="72" stroke="#e9e7ed" stroke-width="9"></circle>
+<circle cx="100" cy="100" fill="none" r="72" stroke="#ba1a1a" stroke-dasharray="452.39" stroke-dashoffset="334.76" stroke-linecap="round" stroke-width="9"></circle>
+<!-- Ring 3: Lottery / KBC (14%) - Circumference 2*pi*59 = 370.7 -->
+<circle cx="100" cy="100" fill="none" r="59" stroke="#e9e7ed" stroke-width="9"></circle>
+<circle cx="100" cy="100" fill="none" r="59" stroke="#4c4aca" stroke-dasharray="370.7" stroke-dashoffset="318.8" stroke-linecap="round" stroke-width="9"></circle>
+<!-- Ring 4: Tech Support (11%) - Circumference 2*pi*46 = 289.02 -->
+<circle cx="100" cy="100" fill="none" r="46" stroke="#e9e7ed" stroke-width="9"></circle>
+<circle cx="100" cy="100" fill="none" r="46" stroke="#008733" stroke-dasharray="289.02" stroke-dashoffset="257.2" stroke-linecap="round" stroke-width="9"></circle>
+<!-- Ring 5: Customs (7%) - Circumference 2*pi*33 = 207.34 -->
+<circle cx="100" cy="100" fill="none" r="33" stroke="#e9e7ed" stroke-width="9"></circle>
+<circle cx="100" cy="100" fill="none" r="33" stroke="#717786" stroke-dasharray="207.34" stroke-dashoffset="192.8" stroke-linecap="round" stroke-width="9"></circle>
+</svg>
+<!-- Center Metric Summary -->
+<div class="absolute flex flex-col items-center justify-center text-center">
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface">5 Major</span>
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Vectors</span>
+</div>
+</div>
+<!-- Breakdown Legend List -->
+<div class="space-y-2 mt-2">
+<div class="flex items-center justify-between text-label-md font-label-md">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-primary"></span>
+<span class="text-on-surface font-medium">Bank KYC Spoof</span>
+</div>
+<span class="font-mono-metric text-mono-metric font-semibold text-on-surface">42%</span>
+</div>
+<div class="flex items-center justify-between text-label-md font-label-md">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-error"></span>
+<span class="text-on-surface font-medium">CBI / Police Threat</span>
+</div>
+<span class="font-mono-metric text-mono-metric font-semibold text-on-surface">26%</span>
+</div>
+<div class="flex items-center justify-between text-label-md font-label-md">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-secondary"></span>
+<span class="text-on-surface font-medium">Lottery / KBC Draw</span>
+</div>
+<span class="font-mono-metric text-mono-metric font-semibold text-on-surface">14%</span>
+</div>
+<div class="flex items-center justify-between text-label-md font-label-md">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-tertiary-container"></span>
+<span class="text-on-surface font-medium">Remote Tech Support</span>
+</div>
+<span class="font-mono-metric text-mono-metric font-semibold text-on-surface">11%</span>
+</div>
+<div class="flex items-center justify-between text-label-md font-label-md">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-outline"></span>
+<span class="text-on-surface font-medium">Customs &amp; Parcel Hold</span>
+</div>
+<span class="font-mono-metric text-mono-metric font-semibold text-on-surface">7%</span>
+</div>
+</div>
+</div>
+<div class="pt-4 mt-3 border-t border-outline-variant/20">
+<div class="flex items-center justify-between text-label-sm font-label-sm text-outline">
+<span>Accuracy Confidence:</span>
+<span class="font-mono-metric text-mono-metric text-tertiary font-semibold">99.82% σ</span>
+</div>
+</div>
+</div>
+</section>
+<!-- ================= BOTTOM SECTION: RECENT TELEPHONY INTERCEPTS TABLE ================= -->
+<section class="bg-surface-container-lowest rounded-2xl border border-outline-variant/30 shadow-[0_4px_20px_rgba(0,0,0,0.03)] overflow-hidden">
+<!-- Section Header -->
+<div class="p-space-lg border-b border-outline-variant/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div>
+<div class="flex items-center gap-2">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Recent Telephony Intercepts</h3>
+<span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-mono-metric text-mono-metric">LIVE FEED</span>
+</div>
+<p class="font-body-md text-body-md text-outline mt-0.5">High-assurance acoustic fingerprinting and conversational trajectory classification</p>
+</div>
+<div class="flex items-center gap-2">
+<button class="px-3 py-1.5 bg-surface-container border border-outline-variant/30 rounded-xl font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-all active:scale-[0.98] flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">filter_list</span>
+<span>Filter Stream</span>
+</button>
+<button class="px-3 py-1.5 bg-surface-container border border-outline-variant/30 rounded-xl font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-all active:scale-[0.98] flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">download</span>
+<span>Export Telemetry</span>
+</button>
+</div>
+</div>
+<!-- Table Container -->
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-outline-variant/20 bg-surface-container-low/50">
+<th class="py-3 px-space-lg font-label-sm text-label-sm uppercase tracking-wider text-outline font-semibold">Session ID / Timestamp</th>
+<th class="py-3 px-4 font-label-sm text-label-sm uppercase tracking-wider text-outline font-semibold">Caller Origin &amp; Trunk</th>
+<th class="py-3 px-4 font-label-sm text-label-sm uppercase tracking-wider text-outline font-semibold">Detected Scam Pattern</th>
+<th class="py-3 px-4 font-label-sm text-label-sm uppercase tracking-wider text-outline font-semibold">Acoustic Score</th>
+<th class="py-3 px-4 font-label-sm text-label-sm uppercase tracking-wider text-outline font-semibold">Automated Mitigation</th>
+<th class="py-3 px-space-lg text-right font-label-sm text-label-sm uppercase tracking-wider text-outline font-semibold">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/15 text-body-md font-body-md">
+<!-- Row 1: High Risk Bank Impersonation -->
+<tr class="hover:bg-surface-container-low/40 transition-colors">
+<td class="py-3.5 px-space-lg">
+<div class="font-mono-metric text-mono-metric font-semibold text-on-surface">#TRK-8921-X</div>
+<div class="font-mono-metric text-mono-metric text-outline">14:48:12 IST</div>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline">cell_tower</span>
+<span class="font-mono-metric text-mono-metric text-on-surface">+91 98402 11982</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Spoofed Private Route (PBX 4)</span>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+<span class="font-medium text-on-surface">Bank KYC Suspension Coercion</span>
+</div>
+<span class="font-label-sm text-label-sm text-error">Synthesized Neural Voice Clone (98.4%)</span>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-2">
+<div class="w-16 h-2 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="w-[96%] h-full bg-error rounded-full"></div>
+</div>
+<span class="font-mono-metric text-mono-metric font-bold text-error">96%</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Zero Hesitation Jitter</span>
+</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-error-container/30 text-error font-label-sm text-label-sm font-semibold border border-error/20">
+<span class="material-symbols-outlined text-[14px]">call_end</span>
+                  Call Terminated
+                </span>
+</td>
+<td class="py-3.5 px-space-lg text-right">
+<button class="text-primary font-semibold hover:underline font-label-md text-label-md inline-flex items-center gap-1">
+<span>Inspect</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</td>
+</tr>
+<!-- Row 2: CBI Threat Coercion -->
+<tr class="hover:bg-surface-container-low/40 transition-colors">
+<td class="py-3.5 px-space-lg">
+<div class="font-mono-metric text-mono-metric font-semibold text-on-surface">#TRK-8920-F</div>
+<div class="font-mono-metric text-mono-metric text-outline">14:47:05 IST</div>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline">cell_tower</span>
+<span class="font-mono-metric text-mono-metric text-on-surface">+91 70291 44019</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline">VoIP Gateway Gateway #12</span>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+<span class="font-medium text-on-surface">CBI Arrest Warrant Threat</span>
+</div>
+<span class="font-label-sm text-label-sm text-error">Social Engineering High Pressure</span>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-2">
+<div class="w-16 h-2 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="w-[88%] h-full bg-error rounded-full"></div>
+</div>
+<span class="font-mono-metric text-mono-metric font-bold text-error">88%</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Hostile Cadence Detected</span>
+</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary-fixed/50 text-on-secondary-fixed-variant font-label-sm text-label-sm font-semibold border border-secondary/20">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+                  Guardian Injected
+                </span>
+</td>
+<td class="py-3.5 px-space-lg text-right">
+<button class="text-primary font-semibold hover:underline font-label-md text-label-md inline-flex items-center gap-1">
+<span>Inspect</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</td>
+</tr>
+<!-- Row 3: Suspicious Customs Parcel -->
+<tr class="hover:bg-surface-container-low/40 transition-colors">
+<td class="py-3.5 px-space-lg">
+<div class="font-mono-metric text-mono-metric font-semibold text-on-surface">#TRK-8919-A</div>
+<div class="font-mono-metric text-mono-metric text-outline">14:45:51 IST</div>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline">cell_tower</span>
+<span class="font-mono-metric text-mono-metric text-on-surface">+1 800 491 0022</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline">International Inbound SIP</span>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="font-medium text-on-surface">Customs Seizure Notification</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Automated IVR Robocall</span>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-2">
+<div class="w-16 h-2 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="w-[58%] h-full bg-secondary rounded-full"></div>
+</div>
+<span class="font-mono-metric text-mono-metric font-bold text-secondary">58%</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Recorded Loop Match</span>
+</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm font-semibold border border-outline-variant/30">
+<span class="material-symbols-outlined text-[14px]">record_voice_over</span>
+                  Voicebot Honeytrapped
+                </span>
+</td>
+<td class="py-3.5 px-space-lg text-right">
+<button class="text-primary font-semibold hover:underline font-label-md text-label-md inline-flex items-center gap-1">
+<span>Inspect</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</td>
+</tr>
+<!-- Row 4: Verified Safe Customer Call -->
+<tr class="hover:bg-surface-container-low/40 transition-colors">
+<td class="py-3.5 px-space-lg">
+<div class="font-mono-metric text-mono-metric font-semibold text-on-surface">#TRK-8918-B</div>
+<div class="font-mono-metric text-mono-metric text-outline">14:44:20 IST</div>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline">cell_tower</span>
+<span class="font-mono-metric text-mono-metric text-on-surface">+91 99100 82741</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Verified Telco Enterprise Line</span>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span class="font-medium text-on-surface">Legitimate Branch Verification</span>
+</div>
+<span class="font-label-sm text-label-sm text-tertiary">Biometric Acoustic Baseline Matches</span>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-2">
+<div class="w-16 h-2 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="w-[8%] h-full bg-tertiary rounded-full"></div>
+</div>
+<span class="font-mono-metric text-mono-metric font-bold text-tertiary">8%</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Natural Vocal Variance</span>
+</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-tertiary-container/15 text-tertiary font-label-sm text-label-sm font-semibold border border-tertiary/20">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                  Passed Through
+                </span>
+</td>
+<td class="py-3.5 px-space-lg text-right">
+<button class="text-primary font-semibold hover:underline font-label-md text-label-md inline-flex items-center gap-1">
+<span>Inspect</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination / Footer Bar -->
+<div class="px-space-lg py-3 border-t border-outline-variant/20 bg-surface-container-lowest flex items-center justify-between text-label-md font-label-md text-outline">
+<div>Showing 1 - 4 of 1,248 active session intercepts</div>
+<div class="flex items-center gap-2">
+<button class="p-1 rounded-lg border border-outline-variant/30 hover:bg-surface-container disabled:opacity-40" disabled="">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+<span class="font-mono-metric text-mono-metric font-semibold text-on-surface">Page 1 of 312</span>
+<button class="p-1 rounded-lg border border-outline-variant/30 hover:bg-surface-container">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+</body></html>

@@ -1,0 +1,17 @@
+phonenumbers
+fastapi
+uvicorn[standard]
+sqlalchemy>=2.0
+httpx
+pytest
+python-multipart
+pydantic>=2.6
+pydantic-settings>=2.2
+python-dotenv
+numpy>=1.26
+scikit-learn>=1.4
+joblib>=1.3
+librosa>=0.10
+soundfile>=0.12
+requests>=2.31
+prometheus-client>=0.20

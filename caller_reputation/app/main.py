@@ -1,0 +1,215 @@
+import logging
+import time
+from collections import defaultdict, deque
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+from typing import Literal
+
+from fastapi import Depends, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from sqlalchemy import func
+from sqlalchemy.orm import Session
+
+from .config import CORS_ORIGINS, REPORT_LIMIT, REPORT_WINDOW_SEC
+from .live import attach_live_routes, init_live_services
+from .db import (
+    NumberSource,
+    ReportLog,
+    ScamNumber,
+    ScrapeLog,
+    SessionLocal,
+    Whitelist,
+    init_db,
+    utcnow,
+)
+from .heuristics import analyze_number
+from .reputation import check_reputation, hash_number, mask_number
+
+logger = logging.getLogger("caller_reputation")
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    init_live_services(_app)
+    yield
+
+
+app = FastAPI(title="Caller Reputation Service", lifespan=lifespan)
+
+# Setup CORS middleware allowing dashboard origins
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ORIGINS if CORS_ORIGINS else ["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+init_db()
+attach_live_routes(app)
+
+GOV_REPORT_LINKS = {
+    "chakshu": "https://sancharsaathi.gov.in/sfc/",
+    "cybercrime": "https://cybercrime.gov.in",
+    "helpline": "1930",
+}
+Category = Literal[
+    "bank_impersonation",
+    "kyc",
+    "lottery",
+    "digital_arrest",
+    "investment",
+    "courier",
+    "tech_support",
+    "other",
+]
+
+
+def get_session():
+    with SessionLocal() as s:
+        yield s
+
+
+# --- in-memory sliding-window limiter (swap for Redis in production) ---
+_hits: dict[str, deque] = defaultdict(deque)
+
+
+def _rate_limited(key: str) -> bool:
+    now, q = time.time(), _hits[key]
+    while q and now - q[0] > REPORT_WINDOW_SEC:
+        q.popleft()
+    if len(q) >= REPORT_LIMIT:
+        return True
+    q.append(now)
+    return False
+
+
+@app.get("/reputation/{number:path}")
+def get_reputation(
+    number: str,
+    via_international: bool = False,
+    session: Session = Depends(get_session),
+):
+    """CallerReputationScore for the fusion engine. Example: /reputation/+919876543210"""
+    # Note: number is normalized and hashed internally; never logged in raw form
+    return check_reputation(session, number, via_international)
+
+
+@app.get("/stats")
+def get_stats(session: Session = Depends(get_session)):
+    """Aggregate statistics for the dashboard UI."""
+    total_scam_numbers = session.query(func.count(ScamNumber.number_hash)).scalar() or 0
+    total_reports = session.query(func.count(ReportLog.id)).scalar() or 0
+    whitelist_count = session.query(func.count(Whitelist.number_hash)).scalar() or 0
+
+    # Counts per category
+    category_counts = {}
+    cat_rows = (
+        session.query(ScamNumber.category, func.count(ScamNumber.number_hash))
+        .group_by(ScamNumber.category)
+        .all()
+    )
+    for cat, cnt in cat_rows:
+        if cat:
+            category_counts[cat] = cnt
+
+    # Counts per source
+    source_counts = {}
+    src_rows = (
+        session.query(NumberSource.source, func.count(NumberSource.id))
+        .group_by(NumberSource.source)
+        .all()
+    )
+    if src_rows:
+        for src, cnt in src_rows:
+            if src:
+                source_counts[src] = cnt
+    else:
+        # Fallback to scam_numbers table sources
+        alt_src_rows = (
+            session.query(ScamNumber.source, func.count(ScamNumber.number_hash))
+            .group_by(ScamNumber.source)
+            .all()
+        )
+        for src, cnt in alt_src_rows:
+            if src:
+                source_counts[src] = cnt
+
+    # Last scrape timestamp from scrape_log
+    last_scrape_dt = session.query(func.max(ScrapeLog.scraped_at)).scalar()
+    last_scrape_time = last_scrape_dt.isoformat() if last_scrape_dt else None
+
+    return {
+        "total_scam_numbers": total_scam_numbers,
+        "total_reports": total_reports,
+        "whitelist_count": whitelist_count,
+        "categories": category_counts,
+        "sources": source_counts,
+        "last_scrape_time": last_scrape_time,
+    }
+
+
+class ReportIn(BaseModel):
+    number: str
+    category: Category = "other"
+    reporter_id: str  # app user / device id (hashed before storage)
+
+
+@app.post("/report", status_code=201)
+def report(body: ReportIn, session: Session = Depends(get_session)):
+    rkey = hash_number("reporter:" + body.reporter_id)
+    if _rate_limited(rkey):
+        raise HTTPException(429, "Too many reports. Try again later.")
+
+    a = analyze_number(body.number)
+    if a.category == "invalid" and not a.valid and not a.canonical.strip("+").isdigit():
+        raise HTTPException(422, "Could not parse phone number.")
+    h = hash_number(a.canonical)
+
+    if session.get(Whitelist, h):
+        raise HTTPException(
+            409, "This is a verified official number; report it via the gov links instead."
+        )
+    if session.query(ReportLog).filter_by(number_hash=h, reporter_hash=rkey).first():
+        raise HTTPException(409, "You have already reported this number.")
+
+    session.add(ReportLog(number_hash=h, reporter_hash=rkey))
+    row = session.get(ScamNumber, h)
+    if row:
+        row.report_count += 1
+        row.last_reported = utcnow()
+        if row.source == "community" and body.category != "other":
+            row.category = body.category
+    else:
+        session.add(
+            ScamNumber(
+                number_hash=h,
+                report_count=1,
+                category=body.category,
+                source="community",
+                first_reported=utcnow(),
+                last_reported=utcnow(),
+            )
+        )
+
+    # Record or update community source trace
+    src_entry = (
+        session.query(NumberSource)
+        .filter_by(number_hash=h, source="community")
+        .first()
+    )
+    if not src_entry:
+        session.add(
+            NumberSource(
+                number_hash=h,
+                source="community",
+                first_seen=utcnow(),
+                last_seen=utcnow(),
+            )
+        )
+    else:
+        src_entry.last_seen = utcnow()
+
+    session.commit()
+    return {"status": "recorded", "also_report_to": GOV_REPORT_LINKS}
