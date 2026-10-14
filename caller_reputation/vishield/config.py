@@ -33,9 +33,9 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     # Upload limits
-    max_file_mb: float = Field(default=10.0, gt=0, le=200)
-    max_duration_seconds: float = Field(default=180.0, gt=0, le=3600)
-    min_duration_seconds: float = Field(default=1.0, ge=0)
+    max_file_mb: float = Field(default=25.0, gt=0, le=200)
+    max_duration_seconds: float = Field(default=1800.0, gt=0, le=3600)
+    min_duration_seconds: float = Field(default=0.5, ge=0)
     allowed_mime_types: tuple[str, ...] = (
         "audio/wav",
         "audio/x-wav",
@@ -45,8 +45,11 @@ class Settings(BaseSettings):
         "audio/mp4",
         "audio/x-m4a",
         "audio/m4a",
+        "audio/ogg",
+        "audio/webm",
+        "video/webm",
     )
-    allowed_extensions: tuple[str, ...] = (".wav", ".mp3", ".m4a")
+    allowed_extensions: tuple[str, ...] = (".wav", ".mp3", ".m4a", ".ogg", ".webm")
     target_sample_rate: int = 16_000
 
     # Ingestion & Streaming Speech-to-Text
@@ -59,6 +62,10 @@ class Settings(BaseSettings):
     stt_backend: Literal["mock", "whisper", "azure", "elevenlabs"] = "elevenlabs"
     whisper_model_size: str = "base"
     whisper_compute_type: str = "int8"
+    stt_allow_mock: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("STT_ALLOW_MOCK", "VISHIELD_STT_ALLOW_MOCK"),
+    )
 
     # ElevenLabs Scribe (speech-to-text)
     eleven_labs_api_key: SecretStr | None = Field(

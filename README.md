@@ -60,13 +60,17 @@ npm run dev
 ## Active Consoles
 
 - **Overview Dashboard**: System status, high-level metrics, and incident distribution.
-- **Live Stream Analysis**: Upload or microphone-capture a consented call. Audio is chunked (PCM16, ~8s), transcribed with **ElevenLabs Scribe** (Hinglish / Hindi / Indian English), redacted, then scored by the rule-based scam detector. Transcripts stream over WebSocket. This pipeline lives in `caller_reputation/vishield` and does **not** require the top-level `vishield/` folder.
-
-Set `ELEVEN_LABS_API_KEY` in `caller_reputation/.env`. If the key is missing, the live tab uses a deterministic mock STT so the UI still runs offline.
+- **Live Stream Analysis**: Upload or microphone-capture a consented call recording.
+  - **Batch & Upload**: Supports `.wav`, `.mp3`, `.m4a`, `.ogg`, `.webm` (up to 25 MB / 30 min duration). Pacing toggled OFF sends audio to `POST /api/transcribe`. Pacing toggled ON streams audio in real time with synchronized elapsed timer.
+  - **Live Microphone**: Captures via browser `MediaRecorder` / `AudioContext`, streams to ElevenLabs Scribe Realtime (`scribe_v2_realtime`) via a short-lived single-use token obtained from `POST /api/elevenlabs/scribe-token` (the master key is never exposed to the client).
+  - **Scam Scoring & Signal Decomposition**: Committed speech segments trigger conversation analysis across six indicator families: authority impersonation, urgency/fear, payment/money requests, credential demands (OTP/PIN/CVV), secrecy/isolation, and trust-building. Fuses with Caller Reputation (`GET /reputation/{number}`) using 0.50 conversation / 0.30 acoustic / 0.20 reputation weights (renormalized when acoustic is unavailable).
+  - **Privacy & In-Memory Redaction**: Audio is never written to disk or permanent databases. Scam rules evaluate raw text first, followed by strict redaction before buffering: Aadhaar (12 digits), PAN, CVV, OTP, UPI IDs, credit card numbers, and phone numbers (masked to last 3 digits).
+  - **Cost & Quota Protection**: Realtime streaming STT is metered per audio-hour; an automated 60-second silence timeout halts transmission if no speech is detected.
+  - **Status & Diagnostics**: `GET /api/stt/status` verifies ElevenLabs connectivity and reports model readiness (`scribe_v1` / `scribe_v2_realtime`). If no key is configured, an informative banner guides the user, or `STT_ALLOW_MOCK=true` can be set to run in deterministic offline mode.
 - **High-Risk Warning**: Immediate alert and mitigation triggers.
 - **Call Analysis Report**: Deep-dive post-call forensic evaluation.
 - **Incident History**: Historical log of flagged threats with severity tags and audio previews.
-- **Number Checker** *(New)*: Telephony intelligence and community reputation lookup with 4 distinct evaluation states:
+- **Number Checker**: Telephony intelligence and community reputation lookup with 4 distinct evaluation states:
   1. **In Database**: Confidence score, report counts, categories, and danger indicators.
   2. **Not in Database**: Heuristic analysis only without presenting unconfirmed numbers as safe.
   3. **Verified Official**: TRAI/bank verified toll-free numbers.

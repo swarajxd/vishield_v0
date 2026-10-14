@@ -28,6 +28,45 @@ export async function fetchLiveHealth() {
 }
 
 /**
+ * Fetch visible STT configuration status from backend.
+ */
+export async function fetchSTTStatus() {
+  const res = await fetch(`${API_BASE}/stt/status`);
+  if (!res.ok) await parseError(res);
+  return await res.json();
+}
+
+/**
+ * Request a single-use ElevenLabs Scribe realtime WebSocket token.
+ */
+export async function fetchScribeToken(consent = true) {
+  const form = new FormData();
+  form.append('consent_confirmed', consent ? 'true' : 'false');
+  const res = await fetch(`${API_BASE}/elevenlabs/scribe-token`, {
+    method: 'POST',
+    body: form,
+  });
+  if (!res.ok) await parseError(res);
+  return await res.json();
+}
+
+/**
+ * Batch transcribe an uploaded or recorded audio file via ElevenLabs Scribe.
+ */
+export async function transcribeAudioFile(file, { consent = true } = {}) {
+  const form = new FormData();
+  form.append('file', file, file.name || 'audio.wav');
+  form.append('consent_confirmed', consent ? 'true' : 'false');
+
+  const res = await fetch(`${API_BASE}/transcribe`, {
+    method: 'POST',
+    body: form,
+  });
+  if (!res.ok) await parseError(res);
+  return await res.json();
+}
+
+/**
  * Upload a consented audio file for chunked STT + scam analysis.
  */
 export async function uploadLiveCall(file, { consent = true, realtime = false } = {}) {
