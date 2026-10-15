@@ -5,7 +5,10 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Literal
 
-from fastapi import Depends, FastAPI, HTTPException
+import os
+from pathlib import Path
+
+from fastapi import Depends, FastAPI, HTTPException, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy import func
@@ -48,6 +51,20 @@ app.add_middleware(
 
 init_db()
 attach_live_routes(app)
+init_live_services(app)
+
+# Mount Risk Fusion Engine API routes for a unified monolithic backend on port 8000
+import importlib.util
+_root_routes = Path(__file__).resolve().parent.parent.parent / "app" / "api" / "routes.py"
+if _root_routes.exists():
+    try:
+        _spec = importlib.util.spec_from_file_location("risk_fusion_api_routes", _root_routes)
+        if _spec and _spec.loader:
+            _mod = importlib.util.module_from_spec(_spec)
+            _spec.loader.exec_module(_mod)
+            app.include_router(_mod.router)
+    except Exception as _e:
+        logger.warning(f"Could not mount Risk Fusion Engine routes: {_e}")
 
 GOV_REPORT_LINKS = {
     "chakshu": "https://sancharsaathi.gov.in/sfc/",
@@ -213,3 +230,32 @@ def report(body: ReportIn, session: Session = Depends(get_session)):
 
     session.commit()
     return {"status": "recorded", "also_report_to": GOV_REPORT_LINKS}
+
+
+@app.post("/pipeline/evaluate")
+async def evaluate_pipeline_endpoint(
+    file: UploadFile = File(...),
+    phone_number: str = Form("+91 98402 11982"),
+    transcript: str | None = Form(None),
+):
+    """
+    End-to-end pipeline: Audio -> AASIST + Caller Reputation + Scam Model -> Fused Result.
+    """
+    import tempfile
+    import shutil
+    from evaluate_pipeline import run_pipeline
+
+    suffix = Path(file.filename or "call.wav").suffix or ".wav"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        shutil.copyfileobj(file.file, tmp)
+        tmp_path = tmp.name
+
+    try:
+        result = run_pipeline(tmp_path, caller_number=phone_number, transcript_override=transcript)
+        return result
+    finally:
+        if os.path.exists(tmp_path):
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass

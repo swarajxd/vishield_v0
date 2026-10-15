@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ViShield Scam Model — Live Tester</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0a0e17;
+      --bg-card: rgba(18, 24, 38, 0.75);
+      --bg-card-border: rgba(255, 255, 255, 0.08);
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --safe: #10b981;
+      --safe-bg: rgba(16, 185, 129, 0.15);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.15);
+      --danger: #ef4444;
+      --danger-bg: rgba(239, 68, 68, 0.15);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.12) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(239, 68, 68, 0.08) 0px, transparent 50%);
+      color: var(--text-main);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      padding: 2.5rem 1rem;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      border-bottom: 1px solid var(--bg-card-border);
+      padding-bottom: 1.25rem;
+    }
+
+    .title-area h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .title-area p {
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      margin-top: 0.25rem;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      background: rgba(16, 185, 129, 0.12);
+      color: #34d399;
+      padding: 0.35rem 0.8rem;
+      border-radius: 9999px;
+      border: 1px solid rgba(52, 211, 153, 0.3);
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background-color: #34d399;
+      box-shadow: 0 0 8px #34d399;
+    }
+
+    .card {
+      background: var(--bg-card);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--bg-card-border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .preset-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 0.6rem;
+    }
+
+    .presets-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .preset-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--bg-card-border);
+      color: #cbd5e1;
+      padding: 0.4rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .preset-btn:hover {
+      background: rgba(255, 255, 255, 0.09);
+      border-color: rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+
+    .preset-btn.danger:hover {
+      border-color: rgba(239, 68, 68, 0.4);
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    .preset-btn.safe:hover {
+      border-color: rgba(16, 185, 129, 0.4);
+      background: rgba(16, 185, 129, 0.1);
+    }
+
+    .input-group {
+      margin-top: 0.5rem;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      background: rgba(10, 14, 23, 0.85);
+      border: 1px solid var(--bg-card-border);
+      border-radius: 12px;
+      padding: 1rem;
+      color: var(--text-main);
+      font-size: 0.95rem;
+      font-family: inherit;
+      line-height: 1.5;
+      resize: vertical;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+    }
+
+    .action-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 1rem;
+      gap: 1rem;
+    }
+
+    .call-id-input {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .call-id-input input {
+      background: rgba(10, 14, 23, 0.7);
+      border: 1px solid var(--bg-card-border);
+      color: var(--text-main);
+      padding: 0.35rem 0.6rem;
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      width: 110px;
+    }
+
+    .submit-btn {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 0.7rem 1.6rem;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 15px rgba(37, 99, 235, 0.35);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Results section */
+    .results-container {
+      display: none;
+      flex-direction: column;
+      gap: 1.25rem;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .verdict-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      padding: 1.25rem 1.5rem;
+      border-radius: 14px;
+      border: 1px solid;
+    }
+
+    .verdict-banner.safe {
+      background: var(--safe-bg);
+      border-color: rgba(16, 185, 129, 0.3);
+      color: #34d399;
+    }
+
+    .verdict-banner.suspicious {
+      background: var(--warning-bg);
+      border-color: rgba(245, 158, 11, 0.3);
+      color: #fbbf24;
+    }
+
+    .verdict-banner.high_risk {
+      background: var(--danger-bg);
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #f87171;
+    }
+
+    .verdict-left h3 {
+      font-size: 1.3rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .verdict-left p {
+      color: var(--text-main);
+      font-size: 0.88rem;
+      margin-top: 0.3rem;
+      opacity: 0.9;
+    }
+
+    .score-badge {
+      font-size: 2rem;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .score-sub {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* Grid for Criteria & Evidence */
+    .details-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 768px) {
+      .details-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .criteria-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: space-between;
+      color: #cbd5e1;
+    }
+
+    .criterion-item {
+      margin-bottom: 0.85rem;
+    }
+
+    .criterion-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      margin-bottom: 0.3rem;
+      color: #94a3b8;
+    }
+
+    .criterion-header span:last-child {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      color: #f1f5f9;
+    }
+
+    .progress-bar-bg {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.4s ease;
+    }
+
+    /* Evidence flags list */
+    .evidence-tags {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .flag-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.82rem;
+      padding: 0.45rem 0.75rem;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--bg-card-border);
+      color: var(--text-muted);
+    }
+
+    .flag-badge.active {
+      background: rgba(239, 68, 68, 0.12);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+      font-weight: 500;
+    }
+
+    /* JSON Drawer */
+    details {
+      background: rgba(10, 14, 23, 0.7);
+      border: 1px solid var(--bg-card-border);
+      border-radius: 12px;
+      padding: 0.8rem 1rem;
+      font-size: 0.82rem;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: #94a3b8;
+      user-select: none;
+    }
+
+    summary:hover {
+      color: #fff;
+    }
+
+    pre {
+      margin-top: 0.75rem;
+      background: #050811;
+      padding: 0.85rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.76rem;
+      color: #38bdf8;
+      line-height: 1.45;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="title-area">
+        <h1>🛡️ ViShield Scam Evaluator</h1>
+        <p>Standalone Neural Phishing & Fraud Detector • Teammate Fusion Contract</p>
+      </div>
+      <div class="status-badge" id="apiStatus">
+        <span class="status-dot"></span> Model Ready (CUDA)
+      </div>
+    </header>
+
+    <!-- Interactive Input Card -->
+    <div class="card">
+      <div class="preset-label">Quick Test Scenarios (Click to Load):</div>
+      <div class="presets-row">
+        <button class="preset-btn danger" onclick="loadPreset('extortion')">🚨 50 Lakhs Photo Extortion</button>
+        <button class="preset-btn danger" onclick="loadPreset('police')">🚨 Police Digital Arrest</button>
+        <button class="preset-btn danger" onclick="loadPreset('otp')">🔒 Bank KYC OTP Solicitation</button>
+        <button class="preset-btn" onclick="loadPreset('veggies')">⚠️ Suspicious Veggies App Link</button>
+        <button class="preset-btn safe" onclick="loadPreset('passport')">✅ Safe Police Verification</button>
+        <button class="preset-btn safe" onclick="loadPreset('dental')">✅ Safe Clinic Appointment</button>
+      </div>
+
+      <div class="input-group">
+        <textarea id="inputText" placeholder="Paste or type caller/conversation text here..."></textarea>
+      </div>
+
+      <div class="action-row">
+        <div class="call-id-input">
+          <label for="callId">Call ID:</label>
+          <input type="text" id="callId" value="call-001" />
+        </div>
+        <button class="submit-btn" id="submitBtn" onclick="evaluateText()">
+          <span id="btnText">Evaluate Risk</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Output Section -->
+    <div class="results-container" id="resultsContainer">
+      
+      <!-- Verdict Banner -->
+      <div class="verdict-banner" id="verdictBanner">
+        <div class="verdict-left">
+          <h3 id="verdictTitle">HIGH RISK</h3>
+          <p id="verdictExplanation">Detected scam signals.</p>
+        </div>
+        <div>
+          <div class="score-badge" id="scoreBadge">0.94</div>
+          <div class="score-sub">Risk Score</div>
+        </div>
+      </div>
+
+      <!-- Details Grid -->
+      <div class="details-grid">
+        
+        <!-- 6 Criteria Card -->
+        <div class="card">
+          <div class="criteria-title">
+            <span>6 Phishing Indicators</span>
+            <span>Weight</span>
+          </div>
+
+          <div class="criterion-item">
+            <div class="criterion-header">
+              <span>Authority Impersonation (0.25)</span>
+              <span id="scoreAuth">0.00</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" id="barAuth" style="width: 0%; background: #3b82f6;"></div>
+            </div>
+          </div>
+
+          <div class="criterion-item">
+            <div class="criterion-header">
+              <span>Credential / OTP Requests (0.25)</span>
+              <span id="scoreOtp">0.00</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" id="barOtp" style="width: 0%; background: #ef4444;"></div>
+            </div>
+          </div>
+
+          <div class="criterion-item">
+            <div class="criterion-header">
+              <span>Payment Requests (0.20)</span>
+              <span id="scorePay">0.00</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" id="barPay" style="width: 0%; background: #f59e0b;"></div>
+            </div>
+          </div>
+
+          <div class="criterion-item">
+            <div class="criterion-header">
+              <span>Urgency & Fear Tactics (0.15)</span>
+              <span id="scoreUrg">0.00</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" id="barUrg" style="width: 0%; background: #ec4899;"></div>
+            </div>
+          </div>
+
+          <div class="criterion-item">
+            <div class="criterion-header">
+              <span>Isolation & Secrecy (0.10)</span>
+              <span id="scoreIso">0.00</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" id="barIso" style="width: 0%; background: #8b5cf6;"></div>
+            </div>
+          </div>
+
+          <div class="criterion-item">
+            <div class="criterion-header">
+              <span>Trust Manipulation (0.05)</span>
+              <span id="scoreTrust">0.00</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" id="barTrust" style="width: 0%; background: #06b6d4;"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Evidence Flags Card -->
+        <div class="card">
+          <div class="criteria-title">
+            <span>Evidence Flags & Indicators</span>
+          </div>
+
+          <div class="evidence-tags" id="evidenceTagsList">
+            <!-- populated by JS -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Raw JSON Contract Details (For Teammate Integration) -->
+      <details>
+        <summary>View Teammate Integration Payload JSON (Contract Output)</summary>
+        <pre><code id="jsonCode">// Results will appear here</code></pre>
+      </details>
+
+    </div>
+  </div>
+
+  <script>
+    const PRESETS = {
+      extortion: "i have your private photos so if you dont want that everyone should see these photos lets make a deal give me 50 lakhs ruppes only cash i a bag if you try to contact someone in police of someone else i will leak them immediately",
+      police: "Police Inspector Deshmukh here from Cyber Crime Cell. An arrest warrant has been issued in your name for money laundering. You are placed under digital arrest. Do not disconnect or tell anyone. Transfer Rs 50,000 to the government safe verification account immediately via UPI.",
+      otp: "Dear customer, your SBI debit card will be permanently blocked within 2 hours due to pending KYC verification. Please share the 6-digit OTP received on your mobile to complete immediate verification.",
+      veggies: "hi i am bhavith we are selling apple's and vegetables we have just started selling would you like to buy if yes please download this app using this link https://veg-offer-deal.apk",
+      passport: "Hello Bhavith, this is Constable Sunil Patil from Kopri Police Station. You applied for a passport recently. You need to visit the station with your original documents for verification. Would Thursday work? No fee is required.",
+      dental: "Good morning Rajesh, this is Dr. Sharma's dental clinic calling to confirm your appointment for tomorrow at 4 PM. Please bring your previous prescription if available. See you tomorrow."
+    };
+
+    function loadPreset(key) {
+      document.getElementById('inputText').value = PRESETS[key] || "";
+      evaluateText();
+    }
+
+    const API_BASE = window.location.protocol.startsWith('http') ? '' : 'http://localhost:8000';
+
+    async function evaluateText() {
+      const text = document.getElementById('inputText').value.trim();
+      const callId = document.getElementById('callId').value.trim() || "call-001";
+      if (!text) {
+        alert("Please enter or paste conversation text to evaluate.");
+        return;
+      }
+
+      const submitBtn = document.getElementById('submitBtn');
+      const btnText = document.getElementById('btnText');
+      submitBtn.disabled = true;
+      btnText.textContent = "Analyzing...";
+
+      try {
+        const response = await fetch(`${API_BASE}/score`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ call_id: callId, text: text })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Server returned ${response.status}: ${await response.text()}`);
+        }
+
+        const data = await response.json();
+        renderResults(data);
+      } catch (err) {
+        console.error("Evaluation Error:", err);
+        alert("Failed to connect to Scam Model API. Ensure the backend server is running.\n\nError: " + err.message);
+      } finally {
+        submitBtn.disabled = false;
+        btnText.textContent = "Evaluate Risk";
+      }
+    }
+
+    function renderResults(data) {
+      const container = document.getElementById('resultsContainer');
+      container.style.display = 'flex';
+
+      const banner = document.getElementById('verdictBanner');
+      const title = document.getElementById('verdictTitle');
+      const exp = document.getElementById('verdictExplanation');
+      const scoreBadge = document.getElementById('scoreBadge');
+
+      banner.className = 'verdict-banner ' + data.risk_level.toLowerCase();
+      title.textContent = data.risk_level.replace('_', ' ');
+      exp.textContent = data.explanation;
+      scoreBadge.textContent = data.conversation_scam_score.toFixed(4);
+
+      // Criteria Progress Bars
+      const c = data.criteria;
+      setBar('scoreAuth', 'barAuth', c.authority_impersonation);
+      setBar('scoreOtp', 'barOtp', c.credential_otp_requests);
+      setBar('scorePay', 'barPay', c.payment_requests);
+      setBar('scoreUrg', 'barUrg', c.urgency_fear);
+      setBar('scoreIso', 'barIso', c.isolation_secrecy);
+      setBar('scoreTrust', 'barTrust', c.trust_manipulation);
+
+      // Evidence Tags
+      const tagsContainer = document.getElementById('evidenceTagsList');
+      tagsContainer.innerHTML = '';
+
+      const flags = [
+        { key: 'bank_impersonation', label: 'Bank / Authority Impersonation', active: data.evidence.bank_impersonation },
+        { key: 'otp_or_credential_request', label: 'OTP / Credential Solicitation', active: data.evidence.otp_or_credential_request },
+        { key: 'payment_request', label: 'Demands for Funds / Money Transfer', active: data.evidence.payment_request },
+        { key: 'urgency_or_fear', label: 'Urgency, Penalties or Arrest Threats', active: data.evidence.urgency_or_fear },
+        { key: 'isolation_tactics', label: 'Victim Isolation & Call Secrecy', active: data.evidence.isolation_tactics }
+      ];
+
+      flags.forEach(f => {
+        const div = document.createElement('div');
+        div.className = 'flag-badge ' + (f.active ? 'active' : '');
+        div.innerHTML = `<span>${f.active ? '🚨' : '⚪'}</span> <span>${f.label}</span>`;
+        tagsContainer.appendChild(div);
+      });
+
+      // Raw JSON
+      document.getElementById('jsonCode').textContent = JSON.stringify(data, null, 2);
+
+      // Scroll smoothly to results
+      container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function setBar(scoreId, barId, val) {
+      document.getElementById(scoreId).textContent = (val * 100).toFixed(1) + '%';
+      document.getElementById(barId).style.width = Math.min(100, Math.max(0, val * 100)) + '%';
+    }
+
+    // Check health on page load
+    async function checkHealth() {
+      try {
+        const res = await fetch(`${API_BASE}/health`);
+        if (res.ok) {
+          const d = await res.json();
+          const badge = document.getElementById('apiStatus');
+          badge.innerHTML = `<span class="status-dot"></span> Model Ready (${d.device.toUpperCase()})`;
+        }
+      } catch (e) {
+        // file opened directly via file://
+        const badge = document.getElementById('apiStatus');
+        badge.innerHTML = `<span class="status-dot" style="background:#f59e0b;box-shadow:0 0 8px #f59e0b"></span> Backend Standby (port 8000)`;
+      }
+    }
+    checkHealth();
+  </script>
+</body>
+</html>

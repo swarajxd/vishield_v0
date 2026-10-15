@@ -12,13 +12,16 @@ from pathlib import Path
 
 from fastapi import FastAPI
 
-# Always resolve ``vishield`` from this backend tree, never from a sibling project folder.
+# Ensure workspace root remains at top of sys.path while appending backend root for vishield resolution
 _BACKEND_ROOT = Path(__file__).resolve().parent.parent
+_WORKSPACE_ROOT = _BACKEND_ROOT.parent
 _backend_root_str = str(_BACKEND_ROOT)
-if sys.path[:1] != [_backend_root_str]:
-    if _backend_root_str in sys.path:
-        sys.path.remove(_backend_root_str)
-    sys.path.insert(0, _backend_root_str)
+_workspace_root_str = str(_WORKSPACE_ROOT)
+
+if _workspace_root_str not in sys.path:
+    sys.path.insert(0, _workspace_root_str)
+if _backend_root_str not in sys.path:
+    sys.path.append(_backend_root_str)
 
 from vishield.api.errors import register_exception_handlers
 from vishield.api.routes import router

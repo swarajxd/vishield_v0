@@ -10,7 +10,10 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from tests.audio_fixtures import synthetic_speechlike, wav_bytes
+try:
+    from tests.audio_fixtures import synthetic_speechlike, wav_bytes
+except (ImportError, ModuleNotFoundError):
+    from audio_fixtures import synthetic_speechlike, wav_bytes
 from vishield.config import Settings, reset_settings_cache
 from vishield.services.analyzer import AnalysisService
 from vishield.services.ingestion import IngestionService

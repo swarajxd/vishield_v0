@@ -1,8 +1,17 @@
 node_modules/
 dist/
 *.db
+# Environment variables & secrets
 .env
+.env.*
 .env.local
+*.env
+**/.env
+**/.env.*
+caller_reputation/.env
+caller_reputation/.env.*
+!.env.example
+!caller_reputation/.env.example
 .DS_Store
 __pycache__/
 *.py[cod]
@@ -10,6 +19,34 @@ __pycache__/
 .venv/
 venv/
 *.egg-info/
+
+# Machine Learning Models & Checkpoints
+*.pth
+*.pt
+*.ckpt
+*.joblib
+*.bin
+*.onnx
+*.safetensors
+*.h5
+
+# Caller Reputation Model Checkpoints & Artifacts
+caller_reputation/*.pth
+caller_reputation/*.pt
+caller_reputation/best_dev_eer.pth
+caller_reputation/models/*.joblib
+caller_reputation/models/*.pkl
+caller_reputation/models/*.pth
+caller_reputation/models/*.pt
+
+# Scam Model Artifacts & Checkpoints
+Scam_model_final/artifacts/*.pt
+Scam_model_final/artifacts/*.pth
+Scam_model_final/artifacts/*.bin
+Scam_model_final/artifacts/*.onnx
+Scam_model_final/artifacts/*.safetensors
+Scam_model_final/model/*.pt
+Scam_model_final/model/*.pth
 
 # Standalone ViShield checkout — not part of this app. Live STT lives in caller_reputation/vishield.
 /vishield/
