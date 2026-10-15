@@ -14,8 +14,10 @@ HOME_REGION = "IN"
 # Secret salt for hashing numbers. CHANGE IN PRODUCTION and never commit it.
 SALT = os.getenv("NUMBER_HASH_SALT", "dev-only-change-me")
 # sqlite for the prototype; use postgresql+psycopg2://user:pw@host/db for PostgreSQL
-DB_FILE = Path(__file__).resolve().parent.parent / "reputation.db"
-DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DB_FILE.as_posix()}")
+_BACKEND_DIR = Path(__file__).resolve().parent.parent
+_default_db = _BACKEND_DIR / "reputation.db"
+_default_db_url = f"sqlite:///{_default_db.as_posix()}" if _default_db.exists() else "sqlite:///./reputation.db"
+DATABASE_URL = os.getenv("DATABASE_URL", _default_db_url)
 IPQS_API_KEY = os.getenv("IPQS_API_KEY")  # optional third-party signal
 
 REPORT_LIMIT = int(os.getenv("REPORT_LIMIT", "10"))         # max reports per reporter ...

@@ -56,7 +56,8 @@ class AnalysisService:
         self.settings = settings
         self.classifier = classifier
         if self.classifier is None and load_model:
-            self.classifier = load_or_none(settings.model_path)
+            model_target = getattr(settings, "resolved_model_path", settings.model_path)
+            self.classifier = load_or_none(model_target)
         self.stt = stt or build_stt(settings)
         self.repository = repository
         self.synthetic_detector: SyntheticVoiceDetector = (

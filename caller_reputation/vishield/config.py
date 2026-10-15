@@ -15,7 +15,18 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 RANDOM_SEED = 42
 """Deterministic seed used by every split, training and sampling routine."""
 
-_BACKEND_ENV = Path(__file__).resolve().parent.parent / ".env"
+_BACKEND_DIR = Path(__file__).resolve().parent.parent
+_BACKEND_ENV = _BACKEND_DIR / ".env"
+
+
+def _resolve_backend_path(p: Path | str) -> Path:
+    target = Path(p)
+    if target.exists() or target.is_absolute():
+        return target
+    candidate = _BACKEND_DIR / target
+    if candidate.exists():
+        return candidate
+    return target
 
 
 class Settings(BaseSettings):
@@ -33,9 +44,9 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     # Upload limits
-    max_file_mb: float = Field(default=10.0, gt=0, le=200)
-    max_duration_seconds: float = Field(default=180.0, gt=0, le=3600)
-    min_duration_seconds: float = Field(default=1.0, ge=0)
+    max_file_mb: float = Field(default=25.0, gt=0, le=200)
+    max_duration_seconds: float = Field(default=1800.0, gt=0, le=3600)
+    min_duration_seconds: float = Field(default=0.5, ge=0)
     allowed_mime_types: tuple[str, ...] = (
         "audio/wav",
         "audio/x-wav",
@@ -45,8 +56,11 @@ class Settings(BaseSettings):
         "audio/mp4",
         "audio/x-m4a",
         "audio/m4a",
+        "audio/ogg",
+        "audio/webm",
+        "video/webm",
     )
-    allowed_extensions: tuple[str, ...] = (".wav", ".mp3", ".m4a")
+    allowed_extensions: tuple[str, ...] = (".wav", ".mp3", ".m4a", ".ogg", ".webm")
     target_sample_rate: int = 16_000
 
     # Ingestion & Streaming Speech-to-Text
@@ -59,6 +73,10 @@ class Settings(BaseSettings):
     stt_backend: Literal["mock", "whisper", "azure", "elevenlabs"] = "elevenlabs"
     whisper_model_size: str = "base"
     whisper_compute_type: str = "int8"
+    stt_allow_mock: bool = Field(
+        default=True,
+        validation_alias=AliasChoices("STT_ALLOW_MOCK", "VISHIELD_STT_ALLOW_MOCK"),
+    )
 
     # ElevenLabs Scribe (speech-to-text)
     eleven_labs_api_key: SecretStr | None = Field(
@@ -125,6 +143,18 @@ class Settings(BaseSettings):
     @property
     def max_file_bytes(self) -> int:
         return int(self.max_file_mb * 1024 * 1024)
+
+    @property
+    def resolved_model_path(self) -> Path:
+        return _resolve_backend_path(self.model_path)
+
+    @property
+    def resolved_dataset_path(self) -> Path:
+        return _resolve_backend_path(self.dataset_path)
+
+    @property
+    def resolved_splits_dir(self) -> Path:
+        return _resolve_backend_path(self.splits_dir)
 
 
 @lru_cache(maxsize=1)

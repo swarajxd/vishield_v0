@@ -52,6 +52,20 @@ app.add_middleware(
 
 init_db()
 attach_live_routes(app)
+init_live_services(app)
+
+# Mount Risk Fusion Engine API routes for a unified monolithic backend on port 8000
+import importlib.util
+_root_routes = Path(__file__).resolve().parent.parent.parent / "app" / "api" / "routes.py"
+if _root_routes.exists():
+    try:
+        _spec = importlib.util.spec_from_file_location("risk_fusion_api_routes", _root_routes)
+        if _spec and _spec.loader:
+            _mod = importlib.util.module_from_spec(_spec)
+            _spec.loader.exec_module(_mod)
+            app.include_router(_mod.router)
+    except Exception as _e:
+        logger.warning(f"Could not mount Risk Fusion Engine routes: {_e}")
 
 GOV_REPORT_LINKS = {
     "chakshu": "https://sancharsaathi.gov.in/sfc/",
