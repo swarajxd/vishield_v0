@@ -20,12 +20,22 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeStreamFilter, setActiveStreamFilter] = useState('all');
   const [activeIncidentId, setActiveIncidentId] = useState('CALL-2026-9102');
+  const [activePipelineReport, setActivePipelineReport] = useState(null);
 
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => {
       setToastMessage(null);
     }, 4000);
+  };
+
+  const handleOpenReportFromPipeline = (report) => {
+    if (report) {
+      setActivePipelineReport(report);
+      if (report.callId) setActiveIncidentId(report.callId);
+    }
+    setActiveTab('report');
+    showToast('Loaded Audio Pipeline evaluation report in Call Analysis View.');
   };
 
   const handleSimulateCall = () => {
@@ -102,7 +112,11 @@ export default function App() {
           {activeTab === 'pipeline' && (
             <AudioPipelineEvaluatorView
               onTriggerToast={showToast}
-              onOpenReport={() => setActiveTab('report')}
+              onOpenReport={handleOpenReportFromPipeline}
+              onSavePipelineReport={(report) => {
+                setActivePipelineReport(report);
+                if (report?.callId) setActiveIncidentId(report.callId);
+              }}
             />
           )}
 
@@ -117,6 +131,7 @@ export default function App() {
           {activeTab === 'report' && (
             <CallAnalysisReportView
               incidentId={activeIncidentId}
+              activePipelineReport={activePipelineReport}
               onTriggerToast={showToast}
             />
           )}

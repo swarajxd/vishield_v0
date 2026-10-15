@@ -1,16 +1,16 @@
 {
-  "call_id": "CALL-01719",
-  "timestamp": "2026-10-14 23:45:19 IST",
-  "audio_file": "Scam Caller - 4-9-18.mp3",
-  "duration_seconds": 330.97,
+  "call_id": "CALL-48865",
+  "timestamp": "2026-10-15 12:51:05 IST",
+  "audio_file": "ai_generated_phone_conversation.mp3",
+  "duration_seconds": 37.59,
   "detected_language": "en",
   "caller_number_raw": "+91 98402 11982",
   "caller_number_masked": "+91 98\u2022\u2022\u2022\u2022\u2022982",
-  "transcript": "Yeah, I'm wondering how. The solar effects may the reason that it's ancient every year in a month of the safford, we the government conduct a demo of extraordinary all across the United Sea, and we observe the government randomly selected today, stupider practices and bills who don't have any criminal records to gain flu, who haven't fought for any buying groups, they would in the past six minutes. So you want to film and under the category you have been randomly approved? Okay. I'm sure one thing we did to clarify which is that this 9,000 grand which you are to receive is not a kind of a loan, not a mortgage, neither when applying grand-like student loan or my loans. This is a warmth in a lifetime free financial support from the government in order to improve your spring standard. So after receiving the grand you may use the money for your good purpose of life, you are fine to spill, harm and evasion and for your medical purpose, but not for drug gambling gets you know the knowledge, right? Yeah, but what if I want to buy drugs with you? I'm sorry. What if I want to buy drugs with you? So for my good fortune, you just must keep your other receipts, you're not a mortgage. This money comes only once in a lifetime. So after receiving the grand, all we ask you to do is that you use the money for your good purpose which can bring benefits to you in order to have a better leaving standard. Okay. Okay, how do I get the money? So you're as your 9,000 grand which you are to receive is still up to the federal users. In order to receive the grand amount, will the government provide you two options? First option is you're going to save this money in a plastic card like Visa, diabetes, Massacol, and a second option is you're going to flip this money directly in a farm off cash. That is cash. One of you now is West and Union on Money Grand Service. Okay, great. Option will be done, man. For you. Cash. All right, cash. But in order to receive this grand and for you assistance, what you have to do is, for the whole unit to keep a call, little finance, you're like, how long will you manage your money confirmation ID number? That is your 9,000 grand confirmation ID. For my client, I will provide you the money confirmation ID and a call by number of the accountant manager who is going to kind you or whoever who is going to release your grand money. Okay. Now, can you get him do it a ban on the paper? Yes, I'm ready. Are you sure? Yes, I have a pen and paper. I will put him through the whole I want to do not down the grand confirmation ID number. It starts with a letter at like the next read. Are you liking the ANG? Uh-huh. Yep. Zero, zero, what? Okay. Better do grand confirmation ID number. Now, in order to reach the accountant manager, you need to style 315. Uh-huh. 514. Yes. Zero, 8, 8, 3. Okay. And the grand confirmation ID which I provide you, you don't have to lose this number or disclose to anyone, has anyone can claim your money with a fake ID? Uh-oh. Now, if you can unless you receive a grand, then opt to close your information to anyone apart from the accountant manager. Okay. And like I told you, this money which I would say is not alone, not like an applicable grand. This money comes only once in a lifetime, till after receiving the grand, you have the money for your good service. All right. Thank you so much. So, for now, before I opt to join the formation, do it to them, just to make it sure that you got the right information, then you will be back to number once again. It's XY001 and then the phone number is 315-514-0883. Exactly. So, right now, I'm going to opt to join the formation, do it to the accountant manager under your confirmation XY001. So, all you have to do is write up to it. You can act online straight away, call by today accountant manager. And when it comes on provide you ID XY001 correctly. Yes. So, let's see accountant manager will ask if you for your grand money by today's bill. All right. Thank you so much. Well, then, step up from my slide. Thank you so much for your time. For now, your policy is good to come. You know, my talking with you and join your benefit. And we'll be by for now. And you have a good one. You too. Bye. Thank you, Chair. Bye.",
+  "transcript": "Hello, am I speaking with Rahul? Yes, this is Rahul. Who is calling? Hi Rahul, I am calling about the military's cancelled for tomorrow. Okay, what time shall I expect it? The driver shall derive between 10 in the morning and noon. You will get a message before arrival. Alright, do I need to confirm anything out? No, there is nothing else needed. Please keep your phone near my encase from the driver call. Understood. Thanks for letting me know. You are welcome. Have a good day.",
   "tri_signal_scores": {
-    "conversation_scam_score": 0.9252,
-    "aasist_spoof_score": 0.5,
-    "caller_reputation_score": 0.0,
+    "conversation_scam_score": 0.0008,
+    "aasist_spoof_score": 0.999,
+    "caller_reputation_score": 0.996,
     "weights_used": {
       "w1_conversation": 0.5,
       "w2_aasist": 0.3,
@@ -18,62 +18,57 @@
     }
   },
   "aasist_details": {
-    "voice_spoof_score": 0.5,
-    "bonafide_probability": 0.5,
+    "voice_spoof_score": 0.999,
+    "bonafide_probability": 0.001,
     "target_length_samples": 64600,
-    "spectral_envelope_profile": "Evaluated via Spectro-Temporal Graph Attention",
-    "verdict": "SUSPICIOUS"
+    "spectral_envelope_profile": "Evaluated via 24-Layer Wav2Vec2 + Spectro-Temporal Graph Attention (AASIST)",
+    "verdict": "SPOOF (Synthetic / Cloned)",
+    "chunks_evaluated": 8
   },
   "caller_reputation_details": {
     "raw_number": "+91 98402 11982",
     "masked_number": "+91 98\u2022\u2022\u2022\u2022\u2022982",
-    "caller_reputation_score": 0.0,
-    "in_database": false,
-    "risk_tier": "SAFE",
-    "category": "unknown",
-    "report_count": 0,
-    "signals": []
+    "caller_reputation_score": 0.996,
+    "in_database": true,
+    "risk_tier": "HIGH_RISK",
+    "category": "kyc_bank_fraud",
+    "report_count": 28,
+    "signals": [
+      "reported_28_times",
+      "last_reported_0d_ago"
+    ]
   },
   "scam_model_details": {
-    "conversation_scam_score": 0.9252,
+    "conversation_scam_score": 0.0008,
     "criteria": {
-      "authority_impersonation": 0.5023,
-      "credential_otp_requests": 0.1327,
-      "payment_requests": 0.8792,
-      "urgency_fear": 0.3245,
-      "isolation_secrecy": 0.0222,
-      "trust_manipulation": 0.0212
+      "authority_impersonation": 0.0,
+      "credential_otp_requests": 0.0,
+      "payment_requests": 0.0003,
+      "urgency_fear": 0.0003,
+      "isolation_secrecy": 0.0,
+      "trust_manipulation": 0.0
     },
     "evidence": {
-      "bank_impersonation": true,
+      "bank_impersonation": false,
       "urgency_or_fear": false,
       "otp_or_credential_request": false,
       "payment_request": true,
       "isolation_tactics": false,
       "indicators": [
-        "Authority/Bank impersonation",
         "Demands for funds transfer or suspicious payment"
       ]
     },
-    "indicators_triggered": [
-      "Authority Impersonation",
-      "Payment Requests",
-      "Urgency Fear"
-    ]
+    "indicators_triggered": []
   },
-  "final_risk_score": 0.6126,
-  "final_risk_percentage": "61.3%",
+  "final_risk_score": 0.4993,
+  "final_risk_percentage": "49.9%",
   "classification": "SUSPICIOUS",
-  "detected_phishing_indicators": [
-    "Authority Impersonation",
-    "Payment Requests",
-    "Urgency Fear"
-  ],
+  "detected_phishing_indicators": [],
   "guardian_notification": {
     "status": "NOT_TRIGGERED",
     "channel": "Firebase Cloud Messaging (FCM Push)",
     "recipient": "Pre-registered Guardian (Rohan Sharma - +91 98110 55432)",
-    "call_snippet": "Yeah, I'm wondering how. The solar effects may the reason that it's ancient every year in a month of the safford, we the...",
-    "risk_level": "61.3% (SUSPICIOUS)"
+    "call_snippet": "Hello, am I speaking with Rahul? Yes, this is Rahul. Who is calling? Hi Rahul, I am calling about the military's cancell...",
+    "risk_level": "49.9% (SUSPICIOUS)"
   }
 }

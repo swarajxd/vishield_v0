@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { PHISHING_INDICATORS_SCHEMA, RISK_THRESHOLDS } from '../data/projectData';
+import { generateForensicPdf, exportReportAsJson } from '../utils/exportReportPdf';
 
-export default function AudioPipelineEvaluatorView({ onTriggerToast, onOpenReport }) {
+export default function AudioPipelineEvaluatorView({ onTriggerToast, onOpenReport, onSavePipelineReport }) {
   const [audioFile, setAudioFile] = useState(null);
   const [audioPreviewUrl, setAudioPreviewUrl] = useState(null);
   const [audioDuration, setAudioDuration] = useState(null);
@@ -19,6 +20,14 @@ export default function AudioPipelineEvaluatorView({ onTriggerToast, onOpenRepor
 
   // Preset audio scenarios with real local samples for 1-click immediate testing
   const sampleScenarios = [
+    {
+      name: 'AI Generated Voice (Deepfake Clone)',
+      number: '+91 98402 11982',
+      filename: 'ai_generated_phone_conversation.mp3',
+      url: '/samples/ai_generated_phone_conversation.mp3',
+      duration: '37.6s',
+      transcript: ''
+    },
     {
       name: 'Scam Caller - 4-9-18 (Real Audio File)',
       number: '+91 98402 11982',
@@ -191,6 +200,7 @@ export default function AudioPipelineEvaluatorView({ onTriggerToast, onOpenRepor
         timestamp: backendData.timestamp || new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) + ' IST',
         audioName: fileToSend?.name || backendData.audio_file || 'uploaded_audio.mp3',
         duration: backendData.duration_seconds ? `${backendData.duration_seconds}s` : (audioDuration ? `${audioDuration}s` : '330.9s'),
+        durationSeconds: backendData.duration_seconds || parseFloat(audioDuration) || 330.9,
         detectedLanguage: backendData.detected_language || 'en',
         callerNumber: backendData.caller_number_raw || phoneNumber,
         maskedNumber: backendData.caller_number_masked || phoneNumber,
@@ -208,10 +218,15 @@ export default function AudioPipelineEvaluatorView({ onTriggerToast, onOpenRepor
         guardianDispatched: backendData.guardian_notification?.status === 'DISPATCHED' || finalRisk >= 0.70,
         guardianNotification: backendData.guardian_notification,
         aasistVerdict: backendData.aasist_details?.verdict || 'EVALUATED',
-        callerRepDetails: backendData.caller_reputation_details
+        callerRepDetails: backendData.caller_reputation_details,
+        audioPreviewUrl: audioPreviewUrl,
+        rawBackendData: backendData
       };
 
       setPipelineResult(realResult);
+      if (onSavePipelineReport) {
+        onSavePipelineReport(realResult);
+      }
       setIsRunning(false);
       onTriggerToast(`Pipeline Completed: ${classification} (${finalRiskPercent}% Fused Risk)`);
       return;
@@ -283,10 +298,15 @@ export default function AudioPipelineEvaluatorView({ onTriggerToast, onOpenRepor
         ? ['Authority Impersonation', 'Urgency & Fear Tactics', 'Payment / Money Requests']
         : [],
       guardianDispatched: finalRisk >= 0.70,
-      aasistVerdict: aasistSpoofScore >= 0.70 ? 'SPOOF (Synthetic / Cloned)' : 'BONAFIDE (Natural Human)'
+      aasistVerdict: aasistSpoofScore >= 0.70 ? 'SPOOF (Synthetic / Cloned)' : 'BONAFIDE (Natural Human)',
+      audioPreviewUrl: audioPreviewUrl,
+      durationSeconds: parseFloat(audioDuration) || 120
     };
 
     setPipelineResult(fallbackResult);
+    if (onSavePipelineReport) {
+      onSavePipelineReport(fallbackResult);
+    }
     setIsRunning(false);
     onTriggerToast(`Pipeline finished! Classified as ${classification} (${finalRiskPercent}%)`);
   };
@@ -661,24 +681,24 @@ export default function AudioPipelineEvaluatorView({ onTriggerToast, onOpenRepor
 
               {/* Criterion-Wise Scores Breakdown (The 6 Phishing Criteria) */}
               <div className="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant/30 shadow-sm">
-                <span className="text-xs font-mono-metric font-bold text-outline uppercase tracking-wider block mb-3">
+                <span className="text-xs sm:text-[12.5px] font-mono-metric font-bold text-outline uppercase tracking-wider block mb-3">
                   Criterion-Wise Scores (Section 3.2):
                 </span>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs font-mono-metric">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 font-mono-metric">
                   {PHISHING_INDICATORS_SCHEMA.map(ind => {
                     const score = (pipelineResult.criteriaScores[ind.id] || 0) * 100;
                     const isHigh = score >= 50;
                     return (
-                      <div key={ind.id} className="p-2.5 rounded-xl bg-surface-container-low border border-outline-variant/20">
-                        <div className="flex justify-between items-center text-[11px]">
-                          <span className="text-outline truncate">{ind.name.split(' ')[0]} {ind.name.split(' ')[1] || ''}</span>
-                          <span className={`font-bold ${isHigh ? 'text-error' : 'text-on-surface'}`}>
+                      <div key={ind.id} className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/20 hover:border-outline-variant/35 transition-colors">
+                        <div className="flex justify-between items-center text-xs sm:text-[12.5px] mb-1 gap-2">
+                          <span className="text-on-surface/90 font-medium truncate">{ind.name.split(' ')[0]} {ind.name.split(' ')[1] || ''}</span>
+                          <span className={`font-bold shrink-0 ${isHigh ? 'text-error' : 'text-on-surface'}`}>
                             {score.toFixed(1)}%
                           </span>
                         </div>
-                        <div className="w-full bg-surface-container-highest rounded-full h-1 mt-1.5 overflow-hidden">
+                        <div className="w-full bg-surface-container-highest rounded-full h-1.5 mt-1.5 overflow-hidden">
                           <div 
-                            className={`h-1 rounded-full ${isHigh ? 'bg-error' : 'bg-primary'}`} 
+                            className={`h-1.5 rounded-full ${isHigh ? 'bg-error' : 'bg-primary'}`} 
                             style={{ width: `${Math.min(100, Math.max(2, score))}%` }}
                           ></div>
                         </div>
@@ -729,16 +749,21 @@ export default function AudioPipelineEvaluatorView({ onTriggerToast, onOpenRepor
               )}
 
               {/* Bottom Utilities */}
-              <div className="flex items-center justify-end gap-3 pt-2">
+              <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
                 <button
                   onClick={() => {
-                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(pipelineResult, null, 2));
-                    const downloadAnchor = document.createElement('a');
-                    downloadAnchor.setAttribute("href", dataStr);
-                    downloadAnchor.setAttribute("download", `evaluation_${pipelineResult.callId}.json`);
-                    document.body.appendChild(downloadAnchor);
-                    downloadAnchor.click();
-                    downloadAnchor.remove();
+                    generateForensicPdf(pipelineResult);
+                    onTriggerToast(`Downloaded Forensic PDF for ${pipelineResult.callId}`);
+                  }}
+                  className="px-4 py-2 bg-primary text-on-primary hover:brightness-105 active:scale-95 rounded-xl font-label-md text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs"
+                >
+                  <span className="material-symbols-outlined text-base">picture_as_pdf</span>
+                  <span>Download Report (PDF)</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    exportReportAsJson(pipelineResult);
                     onTriggerToast('Downloaded structured JSON evaluation report');
                   }}
                   className="px-4 py-2 bg-surface-container-high hover:bg-surface-container-highest text-on-surface border border-outline-variant/30 rounded-xl font-label-md text-xs font-semibold flex items-center gap-1.5 transition-all"
@@ -748,11 +773,11 @@ export default function AudioPipelineEvaluatorView({ onTriggerToast, onOpenRepor
                 </button>
 
                 <button
-                  onClick={onOpenReport}
-                  className="px-4 py-2 bg-primary text-on-primary hover:brightness-105 active:scale-95 rounded-xl font-label-md text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs"
+                  onClick={() => onOpenReport && onOpenReport(pipelineResult)}
+                  className="px-4 py-2 bg-surface-container-highest hover:bg-primary hover:text-on-primary text-on-surface border border-outline-variant/30 rounded-xl font-label-md text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs"
                 >
                   <span className="material-symbols-outlined text-base">description</span>
-                  <span>View Post-Call Forensic Report</span>
+                  <span>View in Call Analysis Report →</span>
                 </button>
               </div>
 

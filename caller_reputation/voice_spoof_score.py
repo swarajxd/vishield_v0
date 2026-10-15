@@ -11,6 +11,7 @@ os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
 import torchaudio
 from app.aasist_inference import AASISTInferenceEngine
 
+
 TARGET_LEN = 64600   # 4.04s @ 16kHz
 STEP       = 32300   # 2.02s stride (50% overlap)
 DEFAULT_CKPT = r"E:\vieshield\ssl_aasist\checkpoints\best_dev_eer.pth"

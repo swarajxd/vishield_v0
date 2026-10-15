@@ -5,3 +5,5 @@ number,category,count,source
 +919414018299,fake_loan,8,community
 +918000211982,kyc,12,trai_feed
 +919934155621,lottery,6,scammer.info
++919840211982,kyc_bank_fraud,28,trai_feed
++917029144019,cbi_digital_arrest,45,police_portal

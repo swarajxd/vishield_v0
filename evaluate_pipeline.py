@@ -97,33 +97,106 @@ def run_speech_recognition(audio_path: str, data: np.ndarray, provided_transcrip
     )
 
 
+# Global singleton for real AASIST neural model
+_AASIST_MODEL = None
+_AASIST_DEVICE = None
+
+def get_aasist_model():
+    global _AASIST_MODEL, _AASIST_DEVICE
+    if _AASIST_MODEL is not None:
+        return _AASIST_MODEL, _AASIST_DEVICE
+
+    ckpt_path = ROOT_DIR / "caller_reputation" / "best_dev_eer.pth"
+    if not ckpt_path.exists():
+        print(f"        [!] AASIST checkpoint not found at {ckpt_path}")
+        return None, None
+
+    try:
+        import torch
+        from caller_reputation.model_ssl_aasist import SSL_AASIST
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        model = SSL_AASIST(device=device)
+        ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
+        cleaned_state = {k[6:] if k.startswith("model.") else k: v for k, v in ckpt.items()}
+        model.load_state_dict(cleaned_state, strict=False)
+        model.to(device)
+        model.eval()
+        _AASIST_MODEL = model
+        _AASIST_DEVICE = device
+        print("        [+] Real SSL-AASIST Model Loaded (24-layer XLSR + Graph Attention Network)")
+        return _AASIST_MODEL, _AASIST_DEVICE
+    except Exception as e:
+        print(f"        [!] AASIST initialization note: {e}")
+        return None, None
+
+
 def run_aasist_voice_authenticity(data: np.ndarray, duration: float) -> dict:
     """
     Evaluates audio for synthetic voice clones / voice conversion.
-    Computes spectral harmonics, temporal jitter, and phase discontinuities matching AASIST.
+    Runs the 24-layer SSL-AASIST Spectro-Temporal Graph Attention Network.
     """
     print("  [2/4] Running AASIST Voice Anti-Spoofing Model...")
-    
-    # Audio feature extraction: Spectro-temporal analysis
-    # Normalizing audio
+    import math
+    import torch
+
+    model, device = get_aasist_model()
+    if model is not None:
+        try:
+            wav = torch.tensor(data, dtype=torch.float32)
+            TARGET_LEN = 64600  # ~4.04s @ 16kHz
+            STEP = 32300        # 50% overlap stride
+            n = len(wav)
+
+            chunks = []
+            start = 0
+            while start + TARGET_LEN <= n:
+                chunks.append(wav[start:start + TARGET_LEN])
+                start += STEP
+            if not chunks:
+                repeats = (TARGET_LEN // n) + 1
+                chunks.append(wav.repeat(repeats)[:TARGET_LEN])
+
+            scores = []
+            with torch.no_grad():
+                # Evaluate up to 8 chunks (~30s) for responsive real-time inference
+                for ch in chunks[:8]:
+                    ch_in = ch.unsqueeze(0).to(device)
+                    out = model(ch_in)
+                    # Out has shape [1, 2] -> [spoof_logit, bonafide_logit]
+                    # z = bonafide_logit - spoof_logit (positive = human, negative = AI/spoof)
+                    z = (out[0, 1] - out[0, 0]).item()
+                    p_spoof = 1.0 / (1.0 + math.exp(z))
+                    scores.append(p_spoof)
+
+            avg_spoof = sum(scores) / len(scores) if scores else 0.5
+            spoof_score = round(float(np.clip(avg_spoof, 0.001, 0.999)), 4)
+            bonafide_score = round(1.0 - spoof_score, 4)
+
+            verdict = "SPOOF (Synthetic / Cloned)" if spoof_score >= 0.70 else (
+                "SUSPICIOUS" if spoof_score >= 0.40 else "BONAFIDE (Natural Human)"
+            )
+
+            return {
+                "voice_spoof_score": spoof_score,
+                "bonafide_probability": bonafide_score,
+                "target_length_samples": 64600,
+                "spectral_envelope_profile": "Evaluated via 24-Layer Wav2Vec2 + Spectro-Temporal Graph Attention (AASIST)",
+                "verdict": verdict,
+                "chunks_evaluated": len(scores)
+            }
+        except Exception as e:
+            print(f"        (AASIST neural forward error: {e})")
+
+    # Fallback to acoustic tone analysis only if neural model fails
     norm_audio = data / (np.max(np.abs(data)) + 1e-8)
-    
-    # FFT spectral variance and envelope calculation
-    fft_mag = np.abs(np.fft.rfft(norm_audio[:min(len(norm_audio), 64600)]))
-    spectral_flatness = np.exp(np.mean(np.log(fft_mag + 1e-8))) / (np.mean(fft_mag) + 1e-8)
-    
-    # Temporal frame energy variance
-    frame_len = 1600  # 100ms
+    frame_len = 1600
     frames = [norm_audio[i:i+frame_len] for i in range(0, len(norm_audio) - frame_len, frame_len // 2)]
     energies = [np.sum(f**2) for f in frames] if frames else [1.0]
     energy_jitter = float(np.std(energies) / (np.mean(energies) + 1e-6))
-
-    # AASIST score calculation:
-    # Synthetic voices have lower micro-temporal pitch jitter and flat unnatural vocoder harmonic tails
     synthetic_artifact_score = 0.5
-    if energy_jitter < 0.35:  # Low natural vocal variation (monotonic vocoder)
+    if energy_jitter < 0.35:
         synthetic_artifact_score += 0.35
-    elif energy_jitter > 1.2:  # High organic human speech inflection
+    elif energy_jitter > 1.2:
         synthetic_artifact_score -= 0.35
         
     spoof_score = round(float(np.clip(synthetic_artifact_score, 0.05, 0.95)), 4)
@@ -133,7 +206,7 @@ def run_aasist_voice_authenticity(data: np.ndarray, duration: float) -> dict:
         "voice_spoof_score": spoof_score,
         "bonafide_probability": bonafide_score,
         "target_length_samples": 64600,
-        "spectral_envelope_profile": "Evaluated via Spectro-Temporal Graph Attention",
+        "spectral_envelope_profile": "Acoustic envelope profile",
         "verdict": "SPOOF (Synthetic / Cloned)" if spoof_score >= 0.70 else ("SUSPICIOUS" if spoof_score >= 0.40 else "BONAFIDE (Natural Human)")
     }
 
