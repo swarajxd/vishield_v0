@@ -261,11 +261,41 @@ def get_incidents(session: Session = Depends(get_session)):
             "riskLevel": r.classification,
             "detectedIndicators": _json.loads(r.detected_indicators) if r.detected_indicators else [],
             "guardianStatus": r.guardian_status,
+            "transcript": r.transcript,
             "transcriptPreview": (r.transcript[:120] + "...") if len(r.transcript) > 120 else r.transcript,
             "audioFile": r.audio_file,
+            "fullResult": _json.loads(r.full_result_json) if r.full_result_json else None,
         }
         for r in rows
     ]
+
+
+@app.get("/incidents/{call_id}")
+def get_incident_by_id(call_id: str, session: Session = Depends(get_session)):
+    r = session.query(Incident).filter(Incident.call_id == call_id).first()
+    if not r:
+        raise HTTPException(404, "Incident not found")
+    import json as _json
+    return {
+        "callId": r.call_id,
+        "timestamp": r.timestamp,
+        "callerNumber": r.caller_number_masked,
+        "fullCaller": r.caller_number_raw,
+        "duration": f"{int(r.duration_seconds // 60):02d}:{int(r.duration_seconds % 60):02d}",
+        "durationSeconds": r.duration_seconds,
+        "language": r.detected_language,
+        "conversationScore": r.conversation_score,
+        "aasistScore": r.aasist_score,
+        "reputationScore": r.reputation_score,
+        "finalRisk": r.final_risk,
+        "riskLevel": r.classification,
+        "detectedIndicators": _json.loads(r.detected_indicators) if r.detected_indicators else [],
+        "guardianStatus": r.guardian_status,
+        "transcript": r.transcript,
+        "transcriptPreview": (r.transcript[:120] + "...") if len(r.transcript) > 120 else r.transcript,
+        "audioFile": r.audio_file,
+        "fullResult": _json.loads(r.full_result_json) if r.full_result_json else None,
+    }
 
 
 @app.post("/pipeline/evaluate")

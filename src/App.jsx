@@ -19,7 +19,7 @@ export default function App() {
   const [toastMessage, setToastMessage] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeStreamFilter, setActiveStreamFilter] = useState('all');
-  const [activeIncidentId, setActiveIncidentId] = useState('CALL-2026-9102');
+  const [activeIncidentId, setActiveIncidentId] = useState(null);
   const [activePipelineReport, setActivePipelineReport] = useState(null);
 
   const showToast = (msg) => {

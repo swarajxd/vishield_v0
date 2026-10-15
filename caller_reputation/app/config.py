@@ -4,6 +4,11 @@ from pathlib import Path
 # Load .env if present
 try:
     from dotenv import load_dotenv
+    # Root .env
+    root_env = Path(__file__).resolve().parent.parent.parent / ".env"
+    if root_env.exists():
+        load_dotenv(root_env)
+    # Backend .env
     env_path = Path(__file__).resolve().parent.parent / ".env"
     if env_path.exists():
         load_dotenv(env_path)

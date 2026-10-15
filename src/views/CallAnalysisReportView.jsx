@@ -1,12 +1,177 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { POSTGRESQL_CALL_RECORDS, PHISHING_INDICATORS_SCHEMA } from '../data/projectData';
 import { generateForensicPdf, exportReportAsJson } from '../utils/exportReportPdf';
 
-export default function CallAnalysisReportView({ incidentId = 'CALL-2026-9102', activePipelineReport, onTriggerToast }) {
+// Helper to normalize an incident from the backend DB into the view's forensic report schema
+function incidentToReport(inc) {
+  if (!inc) return null;
+  const full = inc.fullResult || {};
+  const tri = full.tri_signal_scores || {};
+  const aasist = full.aasist_details || {};
+  const scam = full.scam_model_details || {};
+  const criteria = scam.criteria || {};
+  const rep = full.caller_reputation_details || {};
+  const guardian = full.guardian_notification || {};
+
+  const convScore = inc.conversationScore ?? tri.conversation_scam_score ?? 0;
+  const aasScore = inc.aasistScore ?? tri.aasist_spoof_score ?? 0;
+  const repScore = inc.reputationScore ?? tri.caller_reputation_score ?? 0;
+  const finRisk = inc.finalRisk ?? full.final_risk_score ?? (0.5 * convScore + 0.3 * aasScore + 0.2 * repScore);
+
+  let riskTier = inc.riskLevel || full.classification;
+  if (!riskTier) {
+    if (finRisk >= 0.70) riskTier = 'HIGH RISK';
+    else if (finRisk >= 0.40) riskTier = 'SUSPICIOUS';
+    else riskTier = 'SAFE';
+  }
+
+  // Phishing indicators triggered
+  let indicators = inc.detectedIndicators || [];
+  if (!indicators.length && full.detected_phishing_indicators?.length) {
+    indicators = full.detected_phishing_indicators;
+  }
+  if (!indicators.length && scam.evidence?.indicators?.length) {
+    indicators = scam.evidence.indicators;
+  }
+
+  const durationSec = inc.durationSeconds || full.duration_seconds || 30;
+  const durationStr = inc.duration || `${Math.floor(durationSec / 60).toString().padStart(2, '0')}:${Math.floor(durationSec % 60).toString().padStart(2, '0')}`;
+  const lang = inc.language || full.detected_language || 'English (en)';
+  const fullTranscript = inc.transcript || full.transcript || inc.transcriptPreview || '(No speech transcript recorded)';
+
+  const guardianStr = inc.guardianStatus 
+    ? (inc.guardianStatus.includes('DELIVERED') || inc.guardianStatus.includes('NOT_TRIGGERED') 
+        ? inc.guardianStatus 
+        : inc.guardianStatus === 'DISPATCHED' 
+          ? `DELIVERED (FCM Push to ${guardian.recipient || 'Guardian'})` 
+          : inc.guardianStatus)
+    : (guardian.status === 'DISPATCHED' 
+        ? `DELIVERED (FCM Push to ${guardian.recipient || 'Guardian'})` 
+        : 'NOT_TRIGGERED');
+
+  return {
+    callId: inc.callId || full.call_id || `CALL-${Math.floor(Math.random() * 90000 + 10000)}`,
+    timestamp: inc.timestamp || full.timestamp || new Date().toLocaleString(),
+    callerNumber: inc.callerNumber || full.caller_number_masked || inc.fullCaller || full.caller_number_raw || 'Unknown',
+    fullCaller: inc.fullCaller || full.caller_number_raw || inc.callerNumber || 'Unknown',
+    duration: durationStr,
+    durationSeconds: durationSec,
+    language: lang,
+    conversationScore: convScore,
+    aasistScore: aasScore,
+    reputationScore: repScore,
+    finalRisk: finRisk,
+    riskLevel: riskTier,
+    detectedIndicators: indicators,
+    guardianStatus: guardianStr,
+    transcriptPreview: fullTranscript,
+    inputSource: inc.audioFile ? `Live Pipeline Upload (${inc.audioFile})` : (full.stt_engine ? `Pipeline Audio (${full.stt_engine})` : 'Live Audio Pipeline Evaluation'),
+    audioPreviewUrl: inc.audioPreviewUrl || null,
+    criteriaScores: criteria,
+    isLiveBackend: true,
+    isStaticData: false,
+    aasistDetails: {
+      bonafideProb: aasist.bonafide_probability ?? Math.max(0, 1.0 - aasScore),
+      spoofProb: aasist.voice_spoof_score ?? aasScore,
+      graphAttentionPeaks: aasist.spectral_envelope_profile || aasist.verdict || 'Spectro-temporal graph attention analysis on vocoder harmonics',
+      trainingDatasetRole: 'Evaluated against IndicSynth synthetic speech and IndicVoices-R natural voice models'
+    },
+    rawBackendData: full
+  };
+}
+
+export default function CallAnalysisReportView({ incidentId = null, activePipelineReport = null, onTriggerToast }) {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [activeTab, setActiveTab] = useState('forensics'); // 'forensics' | 'transcript' | 'postgres'
-  const [selectedRecordId, setSelectedRecordId] = useState(activePipelineReport ? activePipelineReport.callId : incidentId);
+  const [activeTab, setActiveTab] = useState('forensics'); // 'forensics' | 'transcript'
+  const [recentDbReports, setRecentDbReports] = useState([]);
+  const [isLoadingReports, setIsLoadingReports] = useState(true);
+  const [selectedRecordId, setSelectedRecordId] = useState(incidentId || activePipelineReport?.callId || null);
   const audioRef = useRef(null);
+
+  // Normalize current session pipeline report if present
+  const normalizedPipelineRecord = useMemo(() => {
+    if (!activePipelineReport) return null;
+    return {
+      callId: activePipelineReport.callId,
+      timestamp: activePipelineReport.timestamp,
+      callerNumber: activePipelineReport.maskedNumber || activePipelineReport.callerNumber,
+      fullCaller: activePipelineReport.callerNumber,
+      duration: activePipelineReport.duration,
+      durationSeconds: activePipelineReport.durationSeconds || parseFloat(activePipelineReport.duration) || 120,
+      language: activePipelineReport.detectedLanguage || activePipelineReport.language || 'English (en)',
+      conversationScore: activePipelineReport.conversationScore,
+      aasistScore: activePipelineReport.aasistScore,
+      reputationScore: activePipelineReport.reputationScore,
+      finalRisk: activePipelineReport.finalRisk,
+      riskLevel: activePipelineReport.classification || activePipelineReport.riskLevel || 'HIGH RISK',
+      detectedIndicators: (activePipelineReport.indicatorsTriggered && activePipelineReport.indicatorsTriggered.length > 0)
+        ? activePipelineReport.indicatorsTriggered
+        : ['Authority Impersonation', 'Urgency & Fear Tactics'],
+      guardianStatus: activePipelineReport.guardianDispatched 
+        ? `DELIVERED (FCM Push to ${activePipelineReport.guardianNotification?.recipient || 'Rohan Sharma'})` 
+        : 'NOT_TRIGGERED',
+      transcriptPreview: activePipelineReport.transcript || '(No speech transcript recorded)',
+      inputSource: activePipelineReport.audioName 
+        ? `Audio Pipeline Upload (${activePipelineReport.audioName})`
+        : 'Audio Pipeline Runner',
+      audioPreviewUrl: activePipelineReport.audioPreviewUrl,
+      criteriaScores: activePipelineReport.criteriaScores || {},
+      isLiveBackend: true,
+      isStaticData: false,
+      aasistDetails: {
+        bonafideProb: activePipelineReport.bonafideScore ?? Math.max(0, 1.0 - activePipelineReport.aasistScore),
+        spoofProb: activePipelineReport.aasistScore,
+        graphAttentionPeaks: activePipelineReport.aasistVerdict || 'Spectro-temporal graph attention analysis on vocoder harmonics',
+        trainingDatasetRole: 'Evaluated against IndicSynth synthetic speech and IndicVoices-R natural voice models'
+      },
+      rawBackendData: activePipelineReport.rawBackendData
+    };
+  }, [activePipelineReport]);
+
+  // Static benchmark records tagged with isStaticData: true
+  const staticBenchmarkRecords = useMemo(() => {
+    return POSTGRESQL_CALL_RECORDS.map(rec => ({
+      ...rec,
+      isStaticData: true
+    }));
+  }, []);
+
+  // Fetch recent incidents from database
+  const fetchRecentIncidents = useCallback(async () => {
+    setIsLoadingReports(true);
+    try {
+      const res = await fetch('http://127.0.0.1:8000/incidents');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        const formatted = data.map(incidentToReport).filter(Boolean);
+        setRecentDbReports(formatted);
+        return formatted;
+      }
+    } catch (err) {
+      console.warn('Could not fetch recent incidents from backend:', err);
+    } finally {
+      setIsLoadingReports(false);
+    }
+    return [];
+  }, []);
+
+  // On mount: fetch DB incidents, and auto-select the latest report if no specific ID requested
+  useEffect(() => {
+    fetchRecentIncidents().then((formatted) => {
+      // If no explicit incidentId prop or active report was provided, default to the latest report!
+      if (!incidentId && !activePipelineReport?.callId && formatted && formatted.length > 0) {
+        setSelectedRecordId(formatted[0].callId);
+      }
+    });
+  }, [fetchRecentIncidents, incidentId, activePipelineReport]);
+
+  // If incidentId prop arrives from parent (e.g. clicked in history), select it
+  useEffect(() => {
+    if (incidentId) {
+      setSelectedRecordId(incidentId);
+    }
+  }, [incidentId]);
 
   // If a new pipeline report arrives, auto-select it
   useEffect(() => {
@@ -15,54 +180,44 @@ export default function CallAnalysisReportView({ incidentId = 'CALL-2026-9102', 
     }
   }, [activePipelineReport]);
 
-  // Normalize pipeline report to standard record format
-  const normalizedPipelineRecord = activePipelineReport ? {
-    callId: activePipelineReport.callId,
-    timestamp: activePipelineReport.timestamp,
-    callerNumber: activePipelineReport.maskedNumber || activePipelineReport.callerNumber,
-    fullCaller: activePipelineReport.callerNumber,
-    duration: activePipelineReport.duration,
-    durationSeconds: activePipelineReport.durationSeconds || parseFloat(activePipelineReport.duration) || 120,
-    language: activePipelineReport.detectedLanguage || activePipelineReport.language || 'English (en)',
-    conversationScore: activePipelineReport.conversationScore,
-    aasistScore: activePipelineReport.aasistScore,
-    reputationScore: activePipelineReport.reputationScore,
-    finalRisk: activePipelineReport.finalRisk,
-    riskLevel: activePipelineReport.classification || activePipelineReport.riskLevel || 'HIGH RISK',
-    detectedIndicators: (activePipelineReport.indicatorsTriggered && activePipelineReport.indicatorsTriggered.length > 0)
-      ? activePipelineReport.indicatorsTriggered
-      : ['Authority Impersonation', 'Urgency & Fear Tactics'],
-    guardianStatus: activePipelineReport.guardianDispatched 
-      ? `DELIVERED (FCM Push to ${activePipelineReport.guardianNotification?.recipient || 'Rohan Sharma'})` 
-      : 'NOT_TRIGGERED',
-    transcriptPreview: activePipelineReport.transcript || '(No speech transcript recorded)',
-    inputSource: activePipelineReport.audioName 
-      ? `Audio Pipeline Upload (${activePipelineReport.audioName})`
-      : 'Audio Pipeline Runner',
-    audioPreviewUrl: activePipelineReport.audioPreviewUrl,
-    criteriaScores: activePipelineReport.criteriaScores || {},
-    isLiveBackend: activePipelineReport.isLiveBackend,
-    aasistDetails: {
-      bonafideProb: activePipelineReport.bonafideScore ?? Math.max(0, 1.0 - activePipelineReport.aasistScore),
-      spoofProb: activePipelineReport.aasistScore,
-      graphAttentionPeaks: activePipelineReport.aasistVerdict || 'Spectro-temporal graph attention analysis on vocoder harmonics',
-      trainingDatasetRole: 'Evaluated against IndicSynth synthetic speech and IndicVoices-R natural voice models'
-    },
-    rawBackendData: activePipelineReport.rawBackendData
-  } : null;
+  // Build the list of RECENT 5 reports (from session + DB)
+  const recent5Reports = useMemo(() => {
+    const list = [];
+    const seenIds = new Set();
 
-  // Build list of available records (Pipeline report + historical PostgreSQL records)
-  const allAvailableRecords = [
-    ...(normalizedPipelineRecord ? [normalizedPipelineRecord] : []),
-    ...POSTGRESQL_CALL_RECORDS
-  ];
+    if (normalizedPipelineRecord) {
+      list.push(normalizedPipelineRecord);
+      seenIds.add(normalizedPipelineRecord.callId);
+    }
 
-  // Resolve current active record
-  const currentRecord = allAvailableRecords.find(r => r.callId === selectedRecordId) 
-    || normalizedPipelineRecord 
-    || POSTGRESQL_CALL_RECORDS[0];
+    for (const r of recentDbReports) {
+      if (!seenIds.has(r.callId)) {
+        list.push(r);
+        seenIds.add(r.callId);
+      }
+    }
 
-  const isLivePipeline = currentRecord.callId === normalizedPipelineRecord?.callId;
+    // Limit to the recent 5 reports
+    return list.slice(0, 5);
+  }, [normalizedPipelineRecord, recentDbReports]);
+
+  // All available records (Recent 5 live reports + Static benchmark reference data)
+  const allAvailableRecords = useMemo(() => {
+    return [...recent5Reports, ...staticBenchmarkRecords];
+  }, [recent5Reports, staticBenchmarkRecords]);
+
+  // Resolve current active record (defaults to the most recent report)
+  const currentRecord = useMemo(() => {
+    if (selectedRecordId) {
+      const match = allAvailableRecords.find(r => r.callId === selectedRecordId);
+      if (match) return match;
+    }
+    // Default to the first (most recent) report, or fallback to first static record
+    return recent5Reports[0] || staticBenchmarkRecords[0];
+  }, [selectedRecordId, allAvailableRecords, recent5Reports, staticBenchmarkRecords]);
+
+  const isLivePipeline = !currentRecord.isStaticData;
+  const isLatestReport = recent5Reports.length > 0 && currentRecord.callId === recent5Reports[0]?.callId;
   const isHighRisk = currentRecord.finalRisk >= 0.70 || (currentRecord.riskLevel && currentRecord.riskLevel.includes('HIGH'));
   const isSuspicious = !isHighRisk && (currentRecord.finalRisk >= 0.40 || (currentRecord.riskLevel && currentRecord.riskLevel.includes('SUSPICIOUS')));
 
@@ -77,27 +232,27 @@ export default function CallAnalysisReportView({ incidentId = 'CALL-2026-9102', 
       }
     } else {
       setIsPlaying(!isPlaying);
-      onTriggerToast(!isPlaying ? 'Playing call audio stream' : 'Audio playback paused');
+      onTriggerToast?.(!isPlaying ? 'Playing call audio stream' : 'Audio playback paused');
     }
   };
 
   const handleDownloadPdf = () => {
     try {
       generateForensicPdf(currentRecord);
-      onTriggerToast(`Downloaded forensic PDF report for ${currentRecord.callId}`);
+      onTriggerToast?.(`Downloaded forensic PDF report for ${currentRecord.callId}`);
     } catch (err) {
       console.error('PDF export error:', err);
-      onTriggerToast('Failed to generate PDF. Check browser console.');
+      onTriggerToast?.('Failed to generate PDF. Check browser console.');
     }
   };
 
   const handleDownloadJson = () => {
     try {
       exportReportAsJson(currentRecord);
-      onTriggerToast(`Downloaded PostgreSQL JSON record for ${currentRecord.callId}`);
+      onTriggerToast?.(`Downloaded PostgreSQL JSON record for ${currentRecord.callId}`);
     } catch (err) {
       console.error('JSON export error:', err);
-      onTriggerToast('Failed to export JSON record.');
+      onTriggerToast?.('Failed to export JSON record.');
     }
   };
 
@@ -117,30 +272,116 @@ export default function CallAnalysisReportView({ incidentId = 'CALL-2026-9102', 
             {currentRecord.riskLevel}
           </span>
 
-          {isLivePipeline && (
-            <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 text-[10px] font-mono-metric font-bold flex items-center gap-1">
+          {isLatestReport ? (
+            <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 text-[10px] font-mono-metric font-bold flex items-center gap-1 shadow-xs">
               <span className="material-symbols-outlined text-xs">bolt</span>
               LATEST PIPELINE EVALUATION
+            </span>
+          ) : isLivePipeline ? (
+            <span className="px-2.5 py-0.5 rounded-full bg-secondary/10 text-secondary border border-secondary/20 text-[10px] font-mono-metric font-bold flex items-center gap-1">
+              <span className="material-symbols-outlined text-xs">history</span>
+              RECENT PIPELINE RUN
+            </span>
+          ) : (
+            <span className="px-2.5 py-0.5 rounded-full bg-slate-500/10 text-slate-700 border border-slate-500/20 text-[10px] font-mono-metric font-bold flex items-center gap-1">
+              <span className="material-symbols-outlined text-xs">database</span>
+              STATIC BENCHMARK REFERENCE
             </span>
           )}
         </div>
 
         {/* Record Selector & Export Utilities */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Quick Switch Dropdown */}
+          
+          {/* Quick Toggle: Recent Reports vs Static Benchmarks */}
+          <div className="flex items-center p-0.5 bg-surface-container-low rounded-xl border border-outline-variant/30 text-xs">
+            <button
+              type="button"
+              onClick={() => {
+                if (recent5Reports.length > 0) {
+                  setSelectedRecordId(recent5Reports[0].callId);
+                  onTriggerToast?.(`Showing latest analysis report (${recent5Reports[0].callId})`);
+                } else {
+                  onTriggerToast?.('No recent pipeline reports found. Run an evaluation first.');
+                }
+              }}
+              className={`px-2.5 py-1 rounded-lg font-mono-metric text-[11px] font-bold flex items-center gap-1 transition-all ${
+                !currentRecord.isStaticData
+                  ? 'bg-primary text-on-primary shadow-xs'
+                  : 'text-on-surface-variant hover:text-on-surface'
+              }`}
+              title="Show recent pipeline analysis reports"
+            >
+              <span className="material-symbols-outlined text-xs">bolt</span>
+              <span>Recent ({recent5Reports.length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (staticBenchmarkRecords.length > 0) {
+                  setSelectedRecordId(staticBenchmarkRecords[0].callId);
+                  onTriggerToast?.(`Loaded static benchmark data (${staticBenchmarkRecords[0].callId})`);
+                }
+              }}
+              className={`px-2.5 py-1 rounded-lg font-mono-metric text-[11px] font-bold flex items-center gap-1 transition-all ${
+                currentRecord.isStaticData
+                  ? 'bg-primary text-on-primary shadow-xs'
+                  : 'text-on-surface-variant hover:text-on-surface'
+              }`}
+              title="Show static benchmark reference reports"
+            >
+              <span className="material-symbols-outlined text-xs">database</span>
+              <span>Static Benchmarks ({staticBenchmarkRecords.length})</span>
+            </button>
+          </div>
+
+          {/* Quick Switch Dropdown (Showing Recent 5 + Static Benchmark Data) */}
           <div className="flex items-center gap-1.5 bg-surface-container-low px-2 py-1 rounded-xl border border-outline-variant/30 text-xs">
-            <span className="text-outline text-[11px] font-mono-metric font-semibold">Select Record:</span>
+            <span className="text-outline text-[11px] font-mono-metric font-semibold flex items-center gap-1">
+              <span className="material-symbols-outlined text-xs">manage_search</span>
+              Select:
+            </span>
             <select
               value={currentRecord.callId}
-              onChange={(e) => setSelectedRecordId(e.target.value)}
-              className="bg-transparent text-on-surface font-mono-metric font-bold text-xs focus:outline-none cursor-pointer"
+              onChange={(e) => {
+                setSelectedRecordId(e.target.value);
+                onTriggerToast?.(`Loaded report ${e.target.value}`);
+              }}
+              className="bg-transparent text-on-surface font-mono-metric font-bold text-xs focus:outline-none cursor-pointer max-w-[260px] sm:max-w-[340px]"
             >
-              {allAvailableRecords.map(r => (
-                <option key={r.callId} value={r.callId}>
-                  {r.callId} — {r.callId === normalizedPipelineRecord?.callId ? 'Live Pipeline' : r.fullCaller || r.callerNumber} ({r.riskLevel})
-                </option>
-              ))}
+              {recent5Reports.length > 0 && (
+                <optgroup label="Recent Analysis Reports (Last 5 Evaluations)">
+                  {recent5Reports.map((r, idx) => (
+                    <option key={r.callId} value={r.callId}>
+                      {r.callId} — {r.callerNumber} ({r.riskLevel} - {(r.finalRisk * 100).toFixed(0)}%){idx === 0 ? ' [LATEST]' : ''}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              <optgroup label="Static Benchmark Reports (Reference Ground-Truth Data)">
+                {staticBenchmarkRecords.map(r => (
+                  <option key={r.callId} value={r.callId}>
+                    {r.callId} — {r.fullCaller || r.callerNumber} ({r.riskLevel}) [Static]
+                  </option>
+                ))}
+              </optgroup>
             </select>
+
+            {/* Refresh DB button */}
+            <button
+              type="button"
+              onClick={() => {
+                fetchRecentIncidents();
+                onTriggerToast?.('Refreshed recent incident reports from database.');
+              }}
+              className="p-1 rounded-lg text-outline hover:text-on-surface hover:bg-surface-container-high transition-colors"
+              title="Refresh recent reports from database"
+            >
+              <span className={`material-symbols-outlined text-sm ${isLoadingReports ? 'animate-spin' : ''}`}>
+                refresh
+              </span>
+            </button>
           </div>
 
           {/* Download PDF Button */}
@@ -189,9 +430,15 @@ export default function CallAnalysisReportView({ incidentId = 'CALL-2026-9102', 
                 <span className="material-symbols-outlined text-sm">translate</span>
                 {currentRecord.language}
               </span>
-              {isLivePipeline && (
-                <span className="px-3 py-1 rounded-full bg-tertiary/10 text-tertiary border border-tertiary/20 text-xs font-mono-metric font-bold">
-                  Generated from Uploaded Audio
+              {currentRecord.isStaticData ? (
+                <span className="px-3 py-1 rounded-full bg-slate-500/10 text-slate-700 border border-slate-500/20 text-xs font-mono-metric font-bold flex items-center gap-1">
+                  <span className="material-symbols-outlined text-xs">database</span>
+                  Static Benchmark Reference
+                </span>
+              ) : (
+                <span className="px-3 py-1 rounded-full bg-tertiary/10 text-tertiary border border-tertiary/20 text-xs font-mono-metric font-bold flex items-center gap-1">
+                  <span className="material-symbols-outlined text-xs">verified</span>
+                  Live Pipeline Audio Evaluation
                 </span>
               )}
             </div>
@@ -310,9 +557,8 @@ export default function CallAnalysisReportView({ incidentId = 'CALL-2026-9102', 
       {/* FORENSIC DEEP-DIVE TABS */}
       <div className="flex items-center gap-2 border-b border-outline-variant/20 pb-1">
         {[
-          { id: 'forensics', label: 'Forensic Audio & AASIST Graph', icon: 'graphic_eq' },
-          { id: 'transcript', label: 'Full Transcript & Criteria (Section 3.2)', icon: 'transcribe' },
-          { id: 'postgres', label: 'PostgreSQL Relational Record (Section 9)', icon: 'database' }
+          { id: 'forensics', label: 'Risk Fusion Donut & AASIST Graph', icon: 'donut_large' },
+          { id: 'transcript', label: 'Full Transcript & Criteria (Section 3.2)', icon: 'transcribe' }
         ].map(t => (
           <button
             key={t.id}
@@ -333,39 +579,202 @@ export default function CallAnalysisReportView({ incidentId = 'CALL-2026-9102', 
       {activeTab === 'forensics' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
-          {/* Audio Player & Waveform */}
-          <div className="lg:col-span-6 bg-surface-container-lowest rounded-3xl p-6 border border-outline-variant/30 shadow-sm flex flex-col gap-4">
-            <div className="flex items-center justify-between pb-3 border-b border-outline-variant/20">
-              <span className="font-mono-metric text-xs font-bold text-outline uppercase tracking-wider flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-primary text-base">volume_up</span>
-                Audio Capture Playback
-              </span>
-              <span className="text-[11px] font-mono-metric text-outline">
-                {currentRecord.audioPreviewUrl ? 'Recorded Audio Stream' : '16kHz PCM WAV'}
+          {/* Visualizer Card: 3-Signal Risk Fusion Donut Chart */}
+          <div className="lg:col-span-6 bg-surface-container-lowest rounded-3xl p-6 border border-outline-variant/30 shadow-sm flex flex-col gap-5">
+            
+            {/* Header: Title */}
+            <div className="flex items-center justify-between gap-3 pb-3 border-b border-outline-variant/20">
+              <div>
+                <span className="font-mono-metric text-xs font-bold text-outline uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-primary text-base">donut_large</span>
+                  3-Signal Risk Fusion Engine (Section 7)
+                </span>
+                <p className="text-[11px] text-on-surface-variant mt-0.5">
+                  Multi-signal contribution breakdown across Conversation (50%), AASIST (30%), and CallerRep (20%)
+                </p>
+              </div>
+
+              <span className="px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-[10px] font-mono-metric font-bold flex items-center gap-1 shrink-0">
+                <span className="material-symbols-outlined text-xs">pie_chart</span>
+                DONUT CHART
               </span>
             </div>
 
-            {/* Playback Controls & Waveform */}
-            <div className="p-4 bg-surface-container-low rounded-2xl border border-outline-variant/20 flex flex-col items-center">
-              <div className="flex items-center gap-3 w-full mb-3">
+            {/* DONUT CHART DISPLAY AREA */}
+            <div className="p-4 bg-surface-container-low rounded-2xl border border-outline-variant/20 flex flex-col items-center justify-center min-h-[290px] relative overflow-hidden">
+              {(() => {
+                const c1 = (currentRecord.conversationScore || 0) * 0.50; // 50%
+                const c2 = (currentRecord.aasistScore || 0) * 0.30;       // 30%
+                const c3 = (currentRecord.reputationScore || 0) * 0.20;   // 20%
+                const totalFused = currentRecord.finalRisk || (c1 + c2 + c3);
+                const safeResidual = Math.max(0, 1.0 - totalFused);
+
+                const cx = 175;
+                const cy = 130;
+                const radius = 78;
+                const strokeWidth = 24;
+                const circumference = 2 * Math.PI * radius; // ~490.08
+
+                const s1 = c1 * circumference;
+                const s2 = c2 * circumference;
+                const s3 = c3 * circumference;
+                const s4 = safeResidual * circumference;
+
+                return (
+                  <div className="w-full flex flex-col items-center">
+                    <svg viewBox="0 0 350 260" className="w-full max-w-[340px] h-[220px]">
+                      {/* Background Track Circle */}
+                      <circle
+                        cx={cx}
+                        cy={cy}
+                        r={radius}
+                        fill="none"
+                        stroke="currentColor"
+                        className="text-surface-container-highest/60"
+                        strokeWidth={strokeWidth}
+                      />
+
+                      {/* Segments container (rotated -90deg so it starts at 12 o'clock) */}
+                      <g transform={`rotate(-90 ${cx} ${cy})`}>
+                        {/* Segment 1: Conversation Scam (w1=50%) */}
+                        {s1 > 0 && (
+                          <circle
+                            cx={cx}
+                            cy={cy}
+                            r={radius}
+                            fill="none"
+                            stroke="#a855f7"
+                            strokeWidth={strokeWidth}
+                            strokeDasharray={`${s1} ${circumference}`}
+                            strokeDashoffset={0}
+                            className="transition-all duration-700 ease-out"
+                          />
+                        )}
+
+                        {/* Segment 2: AASIST Spoof Score (w2=30%) */}
+                        {s2 > 0 && (
+                          <circle
+                            cx={cx}
+                            cy={cy}
+                            r={radius}
+                            fill="none"
+                            stroke="#f59e0b"
+                            strokeWidth={strokeWidth}
+                            strokeDasharray={`${s2} ${circumference}`}
+                            strokeDashoffset={-s1}
+                            className="transition-all duration-700 ease-out"
+                          />
+                        )}
+
+                        {/* Segment 3: Caller Reputation (w3=20%) */}
+                        {s3 > 0 && (
+                          <circle
+                            cx={cx}
+                            cy={cy}
+                            r={radius}
+                            fill="none"
+                            stroke="#14b8a6"
+                            strokeWidth={strokeWidth}
+                            strokeDasharray={`${s3} ${circumference}`}
+                            strokeDashoffset={-(s1 + s2)}
+                            className="transition-all duration-700 ease-out"
+                          />
+                        )}
+
+                        {/* Segment 4: Safe Margin / Clean Residual */}
+                        {s4 > 0 && (
+                          <circle
+                            cx={cx}
+                            cy={cy}
+                            r={radius}
+                            fill="none"
+                            stroke="rgba(148, 163, 184, 0.2)"
+                            strokeWidth={strokeWidth}
+                            strokeDasharray={`${s4} ${circumference}`}
+                            strokeDashoffset={-(s1 + s2 + s3)}
+                            className="transition-all duration-700 ease-out"
+                          />
+                        )}
+                      </g>
+
+                      {/* Center Info in Donut */}
+                      <text
+                        x={cx}
+                        y={cy - 6}
+                        textAnchor="middle"
+                        className="text-2xl font-black font-mono-metric fill-on-surface"
+                      >
+                        {(totalFused * 100).toFixed(1)}%
+                      </text>
+                      <text
+                        x={cx}
+                        y={cy + 12}
+                        textAnchor="middle"
+                        className="text-[9.5px] font-mono-metric font-bold fill-outline uppercase tracking-wider"
+                      >
+                        FINAL FUSED RISK
+                      </text>
+                      <text
+                        x={cx}
+                        y={cy + 28}
+                        textAnchor="middle"
+                        className={`text-[11px] font-bold ${
+                          isHighRisk ? 'fill-error' : isSuspicious ? 'fill-amber-600' : 'fill-tertiary'
+                        }`}
+                      >
+                        {currentRecord.riskLevel}
+                      </text>
+                    </svg>
+
+                    {/* Donut Legend */}
+                    <div className="grid grid-cols-3 gap-2 w-full pt-2 border-t border-outline-variant/20 text-center font-mono-metric text-xs">
+                      <div className="p-2 rounded-xl bg-purple-500/10 border border-purple-500/25">
+                        <span className="text-[10px] text-purple-700 block font-bold">Conv (w1=50%)</span>
+                        <strong className="text-purple-900 text-sm font-black">
+                          {((currentRecord.conversationScore || 0) * 100).toFixed(1)}%
+                        </strong>
+                      </div>
+                      <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/25">
+                        <span className="text-[10px] text-amber-700 block font-bold">AASIST (w2=30%)</span>
+                        <strong className="text-amber-900 text-sm font-black">
+                          {((currentRecord.aasistScore || 0) * 100).toFixed(1)}%
+                        </strong>
+                      </div>
+                      <div className="p-2 rounded-xl bg-teal-500/10 border border-teal-500/25">
+                        <span className="text-[10px] text-teal-700 block font-bold">CallerRep (w3=20%)</span>
+                        <strong className="text-teal-900 text-sm font-black">
+                          {((currentRecord.reputationScore || 0) * 100).toFixed(1)}%
+                        </strong>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Compact Audio Player Strip */}
+            <div className="p-3 bg-surface-container-low rounded-2xl border border-outline-variant/20 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
                 <button
                   onClick={handleTogglePlay}
-                  className="w-12 h-12 rounded-2xl bg-primary text-on-primary flex items-center justify-center shrink-0 shadow-sm active:scale-95 transition-all"
+                  className="w-9 h-9 rounded-xl bg-primary text-on-primary flex items-center justify-center shrink-0 shadow-xs active:scale-95 transition-all"
+                  title={isPlaying ? 'Pause Audio' : 'Play Audio Stream'}
                 >
-                  <span className="material-symbols-outlined text-2xl">
+                  <span className="material-symbols-outlined text-lg">
                     {isPlaying ? 'pause' : 'play_arrow'}
                   </span>
                 </button>
-                <div className="flex-1">
-                  <div className="flex justify-between text-xs font-mono-metric text-outline mb-1">
-                    <span>{isPlaying ? 'Playing...' : '00:00'}</span>
-                    <span>{currentRecord.duration || `${currentRecord.durationSeconds}s`}</span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono-metric text-xs font-bold text-on-surface">
+                      {currentRecord.duration || `${currentRecord.durationSeconds}s`}
+                    </span>
+                    <span className="text-[10px] font-mono-metric text-outline">
+                      {isPlaying ? 'Streaming playback...' : 'Audio Capture Stream'}
+                    </span>
                   </div>
-                  <div className="w-full bg-surface-container-highest rounded-full h-2 cursor-pointer overflow-hidden">
-                    <div 
-                      className="bg-primary h-2 rounded-full transition-all duration-300"
-                      style={{ width: isPlaying ? '72%' : '0%' }}
-                    ></div>
+                  <div className="text-[11px] text-on-surface-variant truncate max-w-[200px] sm:max-w-[280px]">
+                    {currentRecord.inputSource}
                   </div>
                 </div>
               </div>
@@ -380,13 +789,13 @@ export default function CallAnalysisReportView({ incidentId = 'CALL-2026-9102', 
                 />
               )}
 
-              {/* Waveform graphic */}
-              <div className="w-full h-16 flex items-center justify-between gap-1 px-2">
-                {[20, 35, 60, 45, 80, 95, 70, 50, 40, 85, 90, 65, 30, 55, 75, 40, 60, 80, 50, 30].map((h, i) => (
+              {/* Mini animated waveform */}
+              <div className="flex items-center gap-0.5 h-6 shrink-0">
+                {[35, 75, 45, 90, 60, 85, 40, 70].map((h, i) => (
                   <div
                     key={i}
-                    className={`flex-1 rounded-full transition-all ${
-                      isPlaying && i < 14 ? 'bg-primary' : 'bg-outline-variant/40'
+                    className={`w-1 rounded-full transition-all ${
+                      isPlaying ? 'bg-primary' : 'bg-outline-variant/40'
                     }`}
                     style={{ height: `${h}%` }}
                   ></div>
@@ -394,25 +803,22 @@ export default function CallAnalysisReportView({ incidentId = 'CALL-2026-9102', 
               </div>
             </div>
 
-            {/* Audio Properties */}
-            <div className="space-y-2 text-xs">
-              <div className="p-2.5 rounded-xl bg-surface-container-low border border-outline-variant/20 flex items-center justify-between">
-                <span className="text-outline">Chunking Window:</span>
-                <span className="font-mono-metric font-semibold text-on-surface">5–10s streaming slices</span>
-              </div>
-              <div className="p-2.5 rounded-xl bg-surface-container-low border border-outline-variant/20 flex items-center justify-between">
-                <span className="text-outline">Synthetic Vocoder Flag:</span>
-                <span className={`font-mono-metric font-bold ${currentRecord.aasistScore >= 0.70 ? 'text-error' : 'text-tertiary'}`}>
-                  {currentRecord.aasistScore >= 0.70 ? 'Positive (Synthetic Artifact Match)' : 'Negative (Organic Inflection)'}
+            {/* Technical Vocoder & Dataset Meta */}
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="p-2.5 rounded-xl bg-surface-container-low border border-outline-variant/20 flex flex-col">
+                <span className="text-outline text-[10px] uppercase font-mono-metric">Synthetic Vocoder Status</span>
+                <span className={`font-mono-metric font-bold text-xs mt-0.5 ${currentRecord.aasistScore >= 0.70 ? 'text-error' : 'text-tertiary'}`}>
+                  {currentRecord.aasistScore >= 0.70 ? 'Positive (Synthetic Spoof)' : 'Negative (Organic Voice)'}
                 </span>
               </div>
-              <div className="p-2.5 rounded-xl bg-surface-container-low border border-outline-variant/20 flex items-center justify-between">
-                <span className="text-outline">Audio Input Source:</span>
-                <span className="font-mono-metric font-semibold text-on-surface truncate max-w-[260px]">
-                  {currentRecord.inputSource}
+              <div className="p-2.5 rounded-xl bg-surface-container-low border border-outline-variant/20 flex flex-col">
+                <span className="text-outline text-[10px] uppercase font-mono-metric">Evaluation Dataset</span>
+                <span className="font-mono-metric font-semibold text-on-surface text-xs mt-0.5 truncate">
+                  IndicSynth + IndicVoices-R
                 </span>
               </div>
             </div>
+
           </div>
 
           {/* AASIST Graph Attention Architecture View (Section 4 & 5) */}
@@ -566,57 +972,7 @@ export default function CallAnalysisReportView({ incidentId = 'CALL-2026-9102', 
         </div>
       )}
 
-      {/* TAB CONTENT 3: PostgreSQL Schema Record (Section 9) */}
-      {activeTab === 'postgres' && (
-        <div className="bg-surface-container-lowest rounded-3xl p-6 border border-outline-variant/30 shadow-sm flex flex-col gap-4">
-          <div className="flex items-center justify-between pb-3 border-b border-outline-variant/20">
-            <div>
-              <h3 className="font-title text-lg font-bold text-on-surface">
-                PostgreSQL Call Record Entity (Section 9 Schema)
-              </h3>
-              <p className="text-xs text-on-surface-variant mt-0.5">
-                Exact relational database schema mapping from Section 9 of the project description.
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleDownloadJson}
-                className="px-3 py-1.5 bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-xl border border-outline-variant/30 text-xs font-mono-metric font-bold flex items-center gap-1.5 transition-all"
-              >
-                <span className="material-symbols-outlined text-sm">download</span>
-                <span>Download JSON Payload</span>
-              </button>
-              <span className="px-3 py-1.5 rounded-xl bg-indigo-500/10 text-indigo-700 text-xs font-mono-metric font-bold border border-indigo-500/20">
-                table: call_records
-              </span>
-            </div>
-          </div>
 
-          <div className="p-4 bg-[#1e1e2e] text-[#cdd6f4] rounded-2xl font-mono-metric text-xs overflow-x-auto shadow-inner">
-            <pre>
-{JSON.stringify({
-  call_id: currentRecord.callId,
-  timestamp: currentRecord.timestamp,
-  caller_number_protected: currentRecord.callerNumber,
-  caller_number_raw: currentRecord.fullCaller,
-  duration_seconds: currentRecord.durationSeconds,
-  detected_language: currentRecord.language,
-  conversation_scam_score: currentRecord.conversationScore,
-  aasist_spoof_score: currentRecord.aasistScore,
-  caller_reputation_score: currentRecord.reputationScore,
-  final_risk_score: currentRecord.finalRisk,
-  final_risk_level: currentRecord.riskLevel,
-  criteria_scores: currentRecord.criteriaScores || {},
-  detected_phishing_indicators: currentRecord.detectedIndicators,
-  guardian_notification_status: currentRecord.guardianStatus,
-  whisper_transcript: currentRecord.transcriptPreview,
-  input_source: currentRecord.inputSource,
-  created_at: new Date().toISOString()
-}, null, 2)}
-            </pre>
-          </div>
-        </div>
-      )}
 
     </div>
   );

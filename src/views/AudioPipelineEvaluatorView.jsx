@@ -202,6 +202,7 @@ export default function AudioPipelineEvaluatorView({ onTriggerToast, onOpenRepor
         duration: backendData.duration_seconds ? `${backendData.duration_seconds}s` : (audioDuration ? `${audioDuration}s` : '330.9s'),
         durationSeconds: backendData.duration_seconds || parseFloat(audioDuration) || 330.9,
         detectedLanguage: backendData.detected_language || 'en',
+        sttEngine: backendData.stt_engine || 'Whisper (tiny)',
         callerNumber: backendData.caller_number_raw || phoneNumber,
         maskedNumber: backendData.caller_number_masked || phoneNumber,
         transcript: backendData.transcript || '(No speech transcript detected)',
@@ -713,7 +714,7 @@ export default function AudioPipelineEvaluatorView({ onTriggerToast, onOpenRepor
                 <div className="flex items-center justify-between pb-3 border-b border-outline-variant/20 mb-3">
                   <span className="text-xs font-mono-metric font-bold text-outline uppercase tracking-wider flex items-center gap-1.5">
                     <span className="material-symbols-outlined text-purple-600 text-sm">record_voice_over</span>
-                    Transcribed Speech Context (Whisper STT)
+                    Transcribed Speech Context ({pipelineResult.sttEngine || 'ElevenLabs / Whisper STT'})
                   </span>
                   <span className="text-xs font-mono-metric text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200">
                     Language: {pipelineResult.detectedLanguage} • Duration: {pipelineResult.duration}

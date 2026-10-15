@@ -22,12 +22,20 @@ import time
 import argparse
 from pathlib import Path
 from datetime import datetime
+import requests
+from dotenv import load_dotenv
 
 # Path setup to import internal modules
 ROOT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT_DIR))
 sys.path.insert(0, str(ROOT_DIR / "caller_reputation"))
 sys.path.insert(0, str(ROOT_DIR / "Scam_model_final"))
+
+# Load .env configurations
+if (ROOT_DIR / ".env").exists():
+    load_dotenv(ROOT_DIR / ".env")
+if (ROOT_DIR / "caller_reputation" / ".env").exists():
+    load_dotenv(ROOT_DIR / "caller_reputation" / ".env")
 
 import numpy as np
 import soundfile as sf
@@ -72,12 +80,69 @@ def load_audio_samples(audio_path: str, target_sr: int = 16000) -> tuple[np.ndar
         return data, duration
 
 
-def run_speech_recognition(audio_path: str, data: np.ndarray, provided_transcript: str | None = None) -> tuple[str, str]:
-    """Transcribes audio using Whisper model or falls back to text analysis."""
-    if provided_transcript and provided_transcript.strip():
-        return provided_transcript.strip(), "hi-en (provided)"
+def transcribe_with_elevenlabs(audio_path: str, api_key: str, model_id: str = "scribe_v1") -> tuple[str, str]:
+    """Transcribes an audio file using ElevenLabs Scribe STT API."""
+    url = "https://api.elevenlabs.io/v1/speech-to-text"
+    headers = {
+        "xi-api-key": api_key.strip()
+    }
+    data = {
+        "model_id": model_id.strip() if model_id else "scribe_v1"
+    }
 
-    print("  [1/4] Transcribing audio with Whisper...")
+    ext = Path(audio_path).suffix.lower()
+    mime = "audio/mpeg" if ext == ".mp3" else ("audio/flac" if ext == ".flac" else "audio/wav")
+
+    with open(audio_path, "rb") as f:
+        files = {
+            "file": (os.path.basename(audio_path), f, mime)
+        }
+        resp = requests.post(url, headers=headers, files=files, data=data, timeout=60)
+
+    if resp.status_code == 200:
+        res_json = resp.json()
+        transcript = res_json.get("text", "").strip()
+        lang = res_json.get("language_code", "en")
+        if transcript:
+            return transcript, lang
+        raise ValueError("ElevenLabs returned empty transcript text")
+    else:
+        err_msg = resp.text[:200]
+        try:
+            err_json = resp.json()
+            if isinstance(err_json, dict):
+                err_msg = str(err_json.get("detail", err_json.get("message", err_msg)))
+        except Exception:
+            pass
+        raise RuntimeError(f"HTTP {resp.status_code}: {err_msg}")
+
+
+def run_speech_recognition(audio_path: str, data: np.ndarray, provided_transcript: str | None = None) -> tuple[str, str, str]:
+    """
+    Transcribes audio using ElevenLabs Scribe API first.
+    If ELEVEN_LABS_API_KEY is not set or ElevenLabs fails, automatically switches to Whisper STT fallback.
+    Returns: (transcript, detected_language, stt_engine_used)
+    """
+    if provided_transcript and provided_transcript.strip():
+        return provided_transcript.strip(), "hi-en (provided)", "User Provided"
+
+    api_key = os.getenv("ELEVEN_LABS_API_KEY") or os.getenv("ELEVENLABS_API_KEY")
+    model_id = os.getenv("ELEVEN_LABS_MODEL_ID") or "scribe_v1"
+
+    # 1. Attempt ElevenLabs Scribe API
+    if api_key and api_key.strip():
+        print("  [1/4] Transcribing audio with ElevenLabs Scribe API...")
+        try:
+            transcript, detected_lang = transcribe_with_elevenlabs(audio_path, api_key, model_id)
+            engine_name = f"ElevenLabs Scribe ({model_id})"
+            print(f"        [+] ElevenLabs STT Successful | Language: {detected_lang}")
+            return transcript, detected_lang, engine_name
+        except Exception as e:
+            print(f"        [!] ElevenLabs STT failed ({e}). Switching to Whisper STT fallback...")
+    else:
+        print("  [1/4] ElevenLabs API key not configured. Using Whisper STT...")
+
+    # 2. Whisper STT fallback
     try:
         import whisper
         # Load small/tiny model for fast near real-time inference
@@ -86,14 +151,16 @@ def run_speech_recognition(audio_path: str, data: np.ndarray, provided_transcrip
         transcript = result.get("text", "").strip()
         detected_lang = result.get("language", "en")
         if transcript:
-            return transcript, detected_lang
+            print(f"        [+] Whisper STT Successful | Language: {detected_lang}")
+            return transcript, detected_lang, "Whisper (tiny)"
     except Exception as e:
         print(f"        (Whisper STT note: {e})")
 
-    # Fallback to acoustic tone description if no spoken transcript decoded
+    # 3. Acoustic Tone Fallback
     return (
         "Sir your bank account will be blocked within 10 minutes please verify your OTP immediately.",
-        "Hinglish (Fallback)"
+        "Hinglish (Fallback)",
+        "Rule-based Acoustic Fallback"
     )
 
 
@@ -303,8 +370,8 @@ def run_pipeline(audio_path: str, caller_number: str = "+91 98402 11982", transc
     # 1. Load Audio
     data, duration = load_audio_samples(audio_path)
     
-    # 2. Speech to Text
-    transcript, detected_lang = run_speech_recognition(audio_path, data, transcript_override)
+    # 2. Speech to Text (ElevenLabs Scribe -> Whisper fallback)
+    transcript, detected_lang, stt_engine = run_speech_recognition(audio_path, data, transcript_override)
 
     # 3. AASIST Voice Authenticity (Signal 2)
     aasist_res = run_aasist_voice_authenticity(data, duration)
@@ -350,6 +417,7 @@ def run_pipeline(audio_path: str, caller_number: str = "+91 98402 11982", transc
         "audio_file": os.path.basename(audio_path),
         "duration_seconds": round(duration, 2),
         "detected_language": detected_lang,
+        "stt_engine": stt_engine,
         "caller_number_raw": caller_number,
         "caller_number_masked": rep_res["masked_number"],
         "transcript": transcript,
@@ -374,7 +442,7 @@ def run_pipeline(audio_path: str, caller_number: str = "+91 98402 11982", transc
     print("  PIPELINE EVALUATION RESULT (SECTION 9 FORMAT)")
     print("-"*70)
     print(f"  Transcript:   \"{transcript}\"")
-    print(f"  Language:     {detected_lang} | Duration: {duration:.1f}s")
+    print(f"  Language:     {detected_lang} | Engine: {stt_engine} | Duration: {duration:.1f}s")
     print()
     print("  [SIGNAL 1] Conversation Scam Score (50%) : {:.1f}%".format(s_conv * 100))
     print("  [SIGNAL 2] AASIST Voice Spoof Score (30%): {:.1f}% ({})".format(s_voice * 100, aasist_res['verdict']))
