@@ -1,8 +1,17 @@
 node_modules/
 dist/
 *.db
+# Environment variables & secrets
 .env
+.env.*
 .env.local
+*.env
+**/.env
+**/.env.*
+caller_reputation/.env
+caller_reputation/.env.*
+!.env.example
+!caller_reputation/.env.example
 .DS_Store
 __pycache__/
 *.py[cod]

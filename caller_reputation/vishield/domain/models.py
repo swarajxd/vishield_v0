@@ -25,6 +25,7 @@ class IndicatorCategory(StrEnum):
     SECRECY = "secrecy"
     SUSPICIOUS_CONTACT = "suspicious_contact"
     REMOTE_ACCESS = "remote_access"
+    TRUST_BUILDING = "trust_building"
 
 
 class EvidenceSpan(BaseModel):

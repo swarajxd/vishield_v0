@@ -14,6 +14,7 @@ import AudioPipelineEvaluatorView from './views/AudioPipelineEvaluatorView';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('architecture');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [killswitchOpen, setKillswitchOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
@@ -48,22 +49,26 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-background text-on-surface flex flex-col font-body-md antialiased selection:bg-primary-fixed selection:text-on-primary-fixed-variant">
-      {/* Sidebar with PDF Specification Navigation */}
+      {/* Sidebar with PDF Specification Navigation & Shrink Toggle */}
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onTriggerKillswitch={() => setKillswitchOpen(true)}
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
+        isCollapsed={sidebarCollapsed}
+        setIsCollapsed={setSidebarCollapsed}
       />
 
-      {/* Main Workspace Wrapper (Offset for md:pl-72 sidebar) */}
-      <div className="flex-1 flex flex-col min-h-screen min-w-0 transition-all">
+      {/* Main Workspace Wrapper (Offset transitions between md:pl-24 and md:pl-80) */}
+      <div className="flex-1 flex flex-col min-h-screen min-w-0 transition-all duration-300">
         {/* Top Header */}
         <Header
           onSimulateCall={handleSimulateCall}
           onExportReport={handleExportReport}
           setMobileOpen={setMobileOpen}
+          isCollapsed={sidebarCollapsed}
+          setIsCollapsed={setSidebarCollapsed}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           activeStreamFilter={activeStreamFilter}
@@ -71,7 +76,9 @@ export default function App() {
         />
 
         {/* Dynamic View Canvas */}
-        <main className="flex-1 px-4 sm:px-6 lg:px-space-xl py-space-md md:pl-80 transition-all">
+        <main className={`flex-1 px-4 sm:px-6 lg:px-space-xl py-space-md transition-all duration-300 ease-in-out ${
+          sidebarCollapsed ? 'md:pl-24' : 'md:pl-80'
+        }`}>
           {activeTab === 'architecture' && (
             <SystemArchitectureView
               onNavigateToLive={() => setActiveTab('live')}

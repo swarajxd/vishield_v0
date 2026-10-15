@@ -3,7 +3,9 @@ import React, { useState } from 'react';
 export default function Header({ 
   onSimulateCall,
   onExportReport,
-  setMobileOpen, 
+  setMobileOpen,
+  isCollapsed = false,
+  setIsCollapsed,
   searchQuery, 
   setSearchQuery,
   activeStreamFilter,
@@ -38,9 +40,11 @@ export default function Header({
 
   return (
     <header className="sticky top-0 z-30 bg-surface/85 backdrop-blur-md border-b border-outline-variant/30 transition-all">
-      <div className="flex justify-between items-center w-full px-4 sm:px-6 lg:px-space-lg py-2.5 md:pl-80">
-        {/* Left: Mobile Toggle & Title & Quick Search */}
-        <div className="flex items-center gap-3 sm:gap-6 flex-1 max-w-3xl">
+      <div className={`flex justify-between items-center w-full px-4 sm:px-6 lg:px-space-lg py-2.5 transition-all duration-300 ease-in-out ${
+        isCollapsed ? 'md:pl-24' : 'md:pl-80'
+      }`}>
+        {/* Left: Mobile Toggle, Desktop Shrink Toggle, Title & Quick Search */}
+        <div className="flex items-center gap-3 sm:gap-4 flex-1 max-w-3xl">
           {/* Mobile hamburger menu */}
           <button 
             onClick={() => setMobileOpen(true)}
@@ -49,6 +53,20 @@ export default function Header({
           >
             <span className="material-symbols-outlined text-[22px]">menu</span>
           </button>
+
+          {/* Desktop sidebar shrink/expand toggle */}
+          {setIsCollapsed && (
+            <button
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="hidden md:flex p-2 rounded-xl text-on-surface-variant hover:bg-surface-container active:scale-95 transition-all"
+              title={isCollapsed ? "Expand sidebar" : "Shrink sidebar"}
+              aria-label={isCollapsed ? "Expand sidebar" : "Shrink sidebar"}
+            >
+              <span className="material-symbols-outlined text-[22px]">
+                {isCollapsed ? "menu_open" : "menu"}
+              </span>
+            </button>
+          )}
 
           {/* Title */}
           <div className="flex items-center gap-2">
