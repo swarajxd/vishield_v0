@@ -1,27 +1,29 @@
 import React, { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function Sidebar({ 
-  activeTab, 
-  setActiveTab, 
   onTriggerKillswitch, 
   mobileOpen, 
   setMobileOpen,
   isCollapsed: controlledCollapsed,
   setIsCollapsed: controlledSetCollapsed
 }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+
   // Support both controlled and uncontrolled collapsed state
   const [internalCollapsed, setInternalCollapsed] = useState(false);
   const isCollapsed = controlledCollapsed !== undefined ? controlledCollapsed : internalCollapsed;
   const setIsCollapsed = controlledSetCollapsed || setInternalCollapsed;
 
   const mainNavItems = [
-    { id: 'architecture', label: 'System Architecture', icon: 'account_tree', badge: 'SPEC', badgeColor: 'bg-primary' },
-    { id: 'overview', label: 'Overview Dashboard', icon: 'dashboard', badge: null },
-    { id: 'live', label: 'Live Stream Analysis', icon: 'graphic_eq', badge: 'LIVE', badgeColor: 'bg-primary' },
-    { id: 'pipeline', label: 'Audio Pipeline Runner', icon: 'model_training', badge: 'EVAL', badgeColor: 'bg-primary' },
-    { id: 'report', label: 'Call Analysis Report', icon: 'description', badge: null },
-    { id: 'history', label: 'Incident History', icon: 'history', badge: '1,420', badgeColor: 'bg-surface-container' },
-    { id: 'checker', label: 'Number Checker', icon: 'manage_search', badge: 'NEW', badgeColor: 'bg-primary' },
+    { path: '/', label: 'Overview Dashboard', icon: 'dashboard', badge: null },
+    { path: '/systemArchitecture', label: 'System Architecture', icon: 'account_tree', badge: 'SPEC', badgeColor: 'bg-primary' },
+    { path: '/liveStream', label: 'Live Stream Analysis', icon: 'graphic_eq', badge: 'LIVE', badgeColor: 'bg-primary' },
+    { path: '/audioPipeline', label: 'Audio Pipeline Runner', icon: 'model_training', badge: 'EVAL', badgeColor: 'bg-primary' },
+    { path: '/callAnalysis', label: 'Call Analysis Report', icon: 'description', badge: null },
+    { path: '/incidentHistory', label: 'Incident History', icon: 'history', badge: '1,420', badgeColor: 'bg-surface-container' },
+    { path: '/numberChecker', label: 'Number Checker', icon: 'manage_search', badge: 'NEW', badgeColor: 'bg-primary' },
   ];
 
   return (
@@ -111,12 +113,16 @@ export default function Sidebar({
             )}
 
             {mainNavItems.map((item) => {
-              const isActive = activeTab === item.id;
+              const currentPath = location.pathname.toLowerCase();
+              const isActive = item.path === '/' 
+                ? (currentPath === '/' || currentPath === '/dashboard')
+                : currentPath === item.path.toLowerCase();
+
               return (
                 <button
-                  key={item.id}
+                  key={item.path}
                   onClick={() => {
-                    setActiveTab(item.id);
+                    navigate(item.path);
                     setMobileOpen(false);
                   }}
                   title={isCollapsed ? item.label : undefined}
@@ -132,7 +138,7 @@ export default function Sidebar({
                 >
                   <span 
                     className={`material-symbols-outlined text-[21px] shrink-0 ${
-                      item.fill || isActive ? 'fill-icon' : ''
+                      isActive ? 'fill-icon' : ''
                     }`}
                   >
                     {item.icon}
@@ -143,11 +149,9 @@ export default function Sidebar({
                       <span className="flex-1 truncate">{item.label}</span>
                       {item.badge && (
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono-metric font-bold ${
-                          item.id === 'live' 
+                          item.path === '/liveStream' 
                             ? 'bg-primary text-on-primary animate-pulse' 
-                            : item.id === 'alert'
-                            ? 'bg-error text-on-error animate-pulse'
-                            : item.id === 'checker'
+                            : item.path === '/numberChecker'
                             ? 'bg-primary/15 text-primary'
                             : 'bg-surface-container-highest text-on-surface-variant'
                         }`}>

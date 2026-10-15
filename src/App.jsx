@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import KillswitchModal from './components/KillswitchModal';
@@ -11,7 +12,7 @@ import NumberCheckerView from './views/NumberCheckerView';
 import AudioPipelineEvaluatorView from './views/AudioPipelineEvaluatorView';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('architecture');
+  const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [killswitchOpen, setKillswitchOpen] = useState(false);
@@ -33,12 +34,12 @@ export default function App() {
       setActivePipelineReport(report);
       if (report.callId) setActiveIncidentId(report.callId);
     }
-    setActiveTab('report');
+    navigate('/callAnalysis');
     showToast('Loaded Audio Pipeline evaluation report in Call Analysis View.');
   };
 
   const handleSimulateCall = () => {
-    setActiveTab('pipeline');
+    navigate('/audioPipeline');
     showToast('Opened Audio Pipeline Runner: Upload audio to evaluate AASIST and Scam Engine models.');
   };
 
@@ -59,8 +60,6 @@ export default function App() {
     <div className="min-h-screen bg-background text-on-surface flex flex-col font-body-md antialiased selection:bg-primary-fixed selection:text-on-primary-fixed-variant">
       {/* Sidebar with PDF Specification Navigation & Shrink Toggle */}
       <Sidebar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
         onTriggerKillswitch={() => setKillswitchOpen(true)}
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
@@ -83,69 +82,95 @@ export default function App() {
           setActiveStreamFilter={setActiveStreamFilter}
         />
 
-        {/* Dynamic View Canvas */}
+        {/* Dynamic View Canvas using React Router */}
         <main className={`flex-1 px-4 sm:px-6 lg:px-space-xl py-space-md transition-all duration-300 ease-in-out ${
           sidebarCollapsed ? 'md:pl-24' : 'md:pl-80'
         }`}>
-          {activeTab === 'architecture' && (
-            <SystemArchitectureView
-              onNavigateToLive={() => setActiveTab('live')}
-              onTriggerToast={showToast}
-            />
-          )}
+          <Routes>
+            {/* Root localhost:5173 points to Overview Dashboard */}
+            <Route path="/" element={
+              <OverviewDashboardView
+                onInspectReport={(id) => {
+                  setActiveIncidentId(id);
+                  navigate('/callAnalysis');
+                }}
+                onNavigateToAlert={() => navigate('/callAnalysis')}
+                onTriggerToast={showToast}
+              />
+            } />
+            <Route path="/dashboard" element={<Navigate to="/" replace />} />
+            <Route path="/overview" element={<Navigate to="/" replace />} />
 
-          {activeTab === 'overview' && (
-            <OverviewDashboardView
-              onInspectReport={(id) => {
-                setActiveIncidentId(id);
-                setActiveTab('report');
-              }}
-              onNavigateToAlert={() => setActiveTab('report')}
-              onTriggerToast={showToast}
-            />
-          )}
+            {/* /systemArchitecture */}
+            <Route path="/systemArchitecture" element={
+              <SystemArchitectureView
+                onNavigateToLive={() => navigate('/liveStream')}
+                onTriggerToast={showToast}
+              />
+            } />
+            <Route path="/systemarchitecture" element={<Navigate to="/systemArchitecture" replace />} />
+            <Route path="/architecture" element={<Navigate to="/systemArchitecture" replace />} />
 
-          {activeTab === 'live' && (
-            <LiveCallMonitorView
-              onEndCall={() => showToast('Audio capture session ended. Structured report committed to PostgreSQL.')}
-              onNotifyGuardian={handleNotifyGuardian}
-              onTriggerToast={showToast}
-              onNavigateToAlert={() => setActiveTab('report')}
-            />
-          )}
+            {/* /liveStream */}
+            <Route path="/liveStream" element={
+              <LiveCallMonitorView
+                onEndCall={() => showToast('Audio capture session ended. Structured report committed to PostgreSQL.')}
+                onNotifyGuardian={handleNotifyGuardian}
+                onTriggerToast={showToast}
+                onNavigateToAlert={() => navigate('/callAnalysis')}
+              />
+            } />
+            <Route path="/livestream" element={<Navigate to="/liveStream" replace />} />
+            <Route path="/live" element={<Navigate to="/liveStream" replace />} />
 
-          {activeTab === 'pipeline' && (
-            <AudioPipelineEvaluatorView
-              onTriggerToast={showToast}
-              onOpenReport={handleOpenReportFromPipeline}
-              onSavePipelineReport={(report) => {
-                setActivePipelineReport(report);
-                if (report?.callId) setActiveIncidentId(report.callId);
-              }}
-            />
-          )}
+            {/* /audioPipeline */}
+            <Route path="/audioPipeline" element={
+              <AudioPipelineEvaluatorView
+                onTriggerToast={showToast}
+                onOpenReport={handleOpenReportFromPipeline}
+                onSavePipelineReport={(report) => {
+                  setActivePipelineReport(report);
+                  if (report?.callId) setActiveIncidentId(report.callId);
+                }}
+              />
+            } />
+            <Route path="/audiopipeline" element={<Navigate to="/audioPipeline" replace />} />
+            <Route path="/pipeline" element={<Navigate to="/audioPipeline" replace />} />
 
-          {activeTab === 'report' && (
-            <CallAnalysisReportView
-              incidentId={activeIncidentId}
-              activePipelineReport={activePipelineReport}
-              onTriggerToast={showToast}
-            />
-          )}
+            {/* /callAnalysis */}
+            <Route path="/callAnalysis" element={
+              <CallAnalysisReportView
+                incidentId={activeIncidentId}
+                activePipelineReport={activePipelineReport}
+                onTriggerToast={showToast}
+              />
+            } />
+            <Route path="/callanalysis" element={<Navigate to="/callAnalysis" replace />} />
+            <Route path="/report" element={<Navigate to="/callAnalysis" replace />} />
 
-          {activeTab === 'history' && (
-            <IncidentHistoryView
-              onInspectReport={(id) => {
-                setActiveIncidentId(id);
-                setActiveTab('report');
-              }}
-              onTriggerToast={showToast}
-            />
-          )}
+            {/* /incidentHistory */}
+            <Route path="/incidentHistory" element={
+              <IncidentHistoryView
+                onInspectReport={(id) => {
+                  setActiveIncidentId(id);
+                  navigate('/callAnalysis');
+                }}
+                onTriggerToast={showToast}
+              />
+            } />
+            <Route path="/incidenthistory" element={<Navigate to="/incidentHistory" replace />} />
+            <Route path="/history" element={<Navigate to="/incidentHistory" replace />} />
 
-          {activeTab === 'checker' && (
-            <NumberCheckerView onTriggerToast={showToast} />
-          )}
+            {/* /numberChecker */}
+            <Route path="/numberChecker" element={
+              <NumberCheckerView onTriggerToast={showToast} />
+            } />
+            <Route path="/numberchecker" element={<Navigate to="/numberChecker" replace />} />
+            <Route path="/checker" element={<Navigate to="/numberChecker" replace />} />
+
+            {/* Wildcard redirect to Dashboard */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         </main>
       </div>
 
