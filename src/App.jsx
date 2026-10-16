@@ -5,7 +5,6 @@ import Header from './components/Header';
 import KillswitchModal from './components/KillswitchModal';
 import SystemArchitectureView from './views/SystemArchitectureView';
 import OverviewDashboardView from './views/OverviewDashboardView';
-import LiveCallMonitorView from './views/LiveCallMonitorView';
 import CallAnalysisReportView from './views/CallAnalysisReportView';
 import IncidentHistoryView from './views/IncidentHistoryView';
 import NumberCheckerView from './views/NumberCheckerView';
@@ -104,24 +103,17 @@ export default function App() {
             {/* /systemArchitecture */}
             <Route path="/systemArchitecture" element={
               <SystemArchitectureView
-                onNavigateToLive={() => navigate('/liveStream')}
+                onNavigateToLive={() => navigate('/audioPipeline')}
                 onTriggerToast={showToast}
               />
             } />
             <Route path="/systemarchitecture" element={<Navigate to="/systemArchitecture" replace />} />
             <Route path="/architecture" element={<Navigate to="/systemArchitecture" replace />} />
 
-            {/* /liveStream */}
-            <Route path="/liveStream" element={
-              <LiveCallMonitorView
-                onEndCall={() => showToast('Audio capture session ended. Structured report committed to PostgreSQL.')}
-                onNotifyGuardian={handleNotifyGuardian}
-                onTriggerToast={showToast}
-                onNavigateToAlert={() => navigate('/callAnalysis')}
-              />
-            } />
-            <Route path="/livestream" element={<Navigate to="/liveStream" replace />} />
-            <Route path="/live" element={<Navigate to="/liveStream" replace />} />
+            {/* Legacy /liveStream redirect to /audioPipeline */}
+            <Route path="/liveStream" element={<Navigate to="/audioPipeline" replace />} />
+            <Route path="/livestream" element={<Navigate to="/audioPipeline" replace />} />
+            <Route path="/live" element={<Navigate to="/audioPipeline" replace />} />
 
             {/* /audioPipeline */}
             <Route path="/audioPipeline" element={

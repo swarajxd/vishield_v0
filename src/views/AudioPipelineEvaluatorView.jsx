@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { PHISHING_INDICATORS_SCHEMA, RISK_THRESHOLDS } from '../data/projectData';
 import { generateForensicPdf, exportReportAsJson } from '../utils/exportReportPdf';
 
@@ -9,14 +9,24 @@ export default function AudioPipelineEvaluatorView({ onTriggerToast, onOpenRepor
   const [phoneNumber, setPhoneNumber] = useState('+91 98402 11982');
   const [transcriptInput, setTranscriptInput] = useState('');
   
+  // Audio Input Mode: 'upload' (file drop) or 'record' (live microphone)
+  const [inputMode, setInputMode] = useState('upload');
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+
   // Pipeline Execution State
   const [isRunning, setIsRunning] = useState(false);
   const [currentStage, setCurrentStage] = useState(0); // 0 to 5
   const [pipelineResult, setPipelineResult] = useState(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [playbackCurrentTime, setPlaybackCurrentTime] = useState(0);
 
   const fileInputRef = useRef(null);
   const audioPlayerRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const recordingTimerRef = useRef(null);
+  const micStreamRef = useRef(null);
 
   // Preset audio scenarios with real local samples for 1-click immediate testing
   const sampleScenarios = [
@@ -100,6 +110,113 @@ export default function AudioPipelineEvaluatorView({ onTriggerToast, onOpenRepor
 
     onTriggerToast(`Preset loaded: "${sc.name}"`);
   };
+
+  // Live Microphone Recording Handlers
+  const startRecording = async () => {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        onTriggerToast('Microphone access is not supported in this browser.');
+        return;
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      micStreamRef.current = stream;
+
+      let mimeType = 'audio/webm';
+      if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+        mimeType = 'audio/webm;codecs=opus';
+      } else if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) {
+        mimeType = 'audio/ogg;codecs=opus';
+      } else if (MediaRecorder.isTypeSupported('audio/wav')) {
+        mimeType = 'audio/wav';
+      }
+
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        const ext = mimeType.includes('webm') ? 'webm' : mimeType.includes('ogg') ? 'ogg' : 'wav';
+        const recordedFile = new File([audioBlob], `mic_live_recording_${Date.now()}.${ext}`, { type: mimeType });
+
+        setAudioFile(recordedFile);
+        const previewUrl = URL.createObjectURL(audioBlob);
+        setAudioPreviewUrl(previewUrl);
+        setPipelineResult(null);
+        setIsPlayingAudio(false);
+        setPlaybackCurrentTime(0);
+
+        // Calculate audio duration
+        const tempAudio = new Audio(previewUrl);
+        tempAudio.onloadedmetadata = () => {
+          if (tempAudio.duration && !isNaN(tempAudio.duration) && tempAudio.duration !== Infinity) {
+            setAudioDuration(tempAudio.duration.toFixed(1));
+          }
+        };
+
+        // Stop all mic tracks to turn off recording light
+        if (micStreamRef.current) {
+          micStreamRef.current.getTracks().forEach((track) => track.stop());
+          micStreamRef.current = null;
+        }
+
+        onTriggerToast(`Captured ${(recordedFile.size / 1024).toFixed(1)} KB live audio via microphone. Ready to rehear or evaluate!`);
+      };
+
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.pause();
+        audioPlayerRef.current.currentTime = 0;
+      }
+      setIsPlayingAudio(false);
+      setPlaybackCurrentTime(0);
+
+      mediaRecorder.start(250);
+      setIsRecording(true);
+      setRecordingSeconds(0);
+      setPipelineResult(null);
+
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingSeconds((prev) => {
+          const next = prev + 1;
+          setAudioDuration(next.toString());
+          return next;
+        });
+      }, 1000);
+
+      onTriggerToast('Live microphone recording started. Speak now...');
+    } catch (err) {
+      console.error('Microphone recording error:', err);
+      onTriggerToast(`Could not start microphone recording: ${err.message || 'Permission denied'}`);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+    setIsRecording(false);
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+  };
+
+  // Clean up recording timer and mic stream on unmount
+  useEffect(() => {
+    return () => {
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+      if (micStreamRef.current) {
+        micStreamRef.current.getTracks().forEach((t) => t.stop());
+      }
+    };
+  }, []);
 
   const handleRunPipeline = async () => {
     if (!audioFile && !transcriptInput && !audioPreviewUrl) {
@@ -312,15 +429,48 @@ export default function AudioPipelineEvaluatorView({ onTriggerToast, onOpenRepor
     onTriggerToast(`Pipeline finished! Classified as ${classification} (${finalRiskPercent}%)`);
   };
 
+  const formatTime = (secs) => {
+    if (isNaN(secs) || secs === Infinity || secs < 0) return '0:00';
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
   const toggleAudioPlay = () => {
     if (!audioPlayerRef.current) return;
     if (isPlayingAudio) {
       audioPlayerRef.current.pause();
       setIsPlayingAudio(false);
     } else {
-      audioPlayerRef.current.play();
-      setIsPlayingAudio(true);
+      if (audioPlayerRef.current.ended || (audioPlayerRef.current.duration && audioPlayerRef.current.currentTime >= audioPlayerRef.current.duration)) {
+        audioPlayerRef.current.currentTime = 0;
+      }
+      audioPlayerRef.current.play()
+        .then(() => setIsPlayingAudio(true))
+        .catch((err) => {
+          console.warn('Playback error:', err);
+          setIsPlayingAudio(false);
+        });
     }
+  };
+
+  const handleRestartAudio = () => {
+    if (!audioPlayerRef.current) return;
+    audioPlayerRef.current.currentTime = 0;
+    setPlaybackCurrentTime(0);
+    audioPlayerRef.current.play()
+      .then(() => setIsPlayingAudio(true))
+      .catch((err) => {
+        console.warn('Playback error:', err);
+        setIsPlayingAudio(false);
+      });
+  };
+
+  const handleSeekAudio = (e) => {
+    if (!audioPlayerRef.current) return;
+    const seekTime = parseFloat(e.target.value);
+    audioPlayerRef.current.currentTime = seekTime;
+    setPlaybackCurrentTime(seekTime);
   };
 
   return (
@@ -373,64 +523,298 @@ export default function AudioPipelineEvaluatorView({ onTriggerToast, onOpenRepor
         {/* LEFT COLUMN: Upload & Configuration (5 cols) */}
         <div className="lg:col-span-5 flex flex-col gap-5">
           
-          {/* File Upload Dropzone */}
+          {/* File Upload / Live Microphone Recording Workspace */}
           <div className="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant/30 shadow-sm flex flex-col gap-4">
-            <div className="flex items-center justify-between pb-3 border-b border-outline-variant/20">
+            
+            {/* Header: Mode Toggle between Upload and Microphone */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-outline-variant/20">
               <span className="font-mono-metric text-xs font-bold text-outline uppercase tracking-wider flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-primary text-base">cloud_upload</span>
-                Upload Audio File
+                <span className="material-symbols-outlined text-primary text-base">
+                  {inputMode === 'upload' ? 'cloud_upload' : 'mic'}
+                </span>
+                Audio Source Selection
               </span>
-              <span className="text-[10px] font-mono-metric text-outline">WAV / MP3 / FLAC (16kHz)</span>
+
+              {/* Mode Toggle Pills */}
+              <div className="flex items-center p-0.5 bg-surface-container-low rounded-xl border border-outline-variant/30 text-xs shrink-0 self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isRecording) stopRecording();
+                    setInputMode('upload');
+                  }}
+                  className={`px-3 py-1.5 rounded-lg font-mono-metric text-[11px] font-bold flex items-center gap-1.5 transition-all ${
+                    inputMode === 'upload'
+                      ? 'bg-primary text-on-primary shadow-xs'
+                      : 'text-on-surface-variant hover:text-on-surface'
+                  }`}
+                  title="Upload audio file from your device"
+                >
+                  <span className="material-symbols-outlined text-sm">upload_file</span>
+                  <span>Upload File</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInputMode('record');
+                  }}
+                  className={`px-3 py-1.5 rounded-lg font-mono-metric text-[11px] font-bold flex items-center gap-1.5 transition-all ${
+                    inputMode === 'record'
+                      ? 'bg-primary text-on-primary shadow-xs'
+                      : 'text-on-surface-variant hover:text-on-surface'
+                  }`}
+                  title="Record audio live through your microphone"
+                >
+                  <span className="material-symbols-outlined text-sm">mic</span>
+                  <span>Live Microphone</span>
+                </button>
+              </div>
             </div>
 
-            {/* Hidden file input */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="audio/*,.wav,.mp3,.flac,.m4a,.ogg"
-              onChange={handleFileChange}
-              className="hidden"
-            />
+            {/* A. FILE UPLOAD MODE */}
+            {inputMode === 'upload' && (
+              <>
+                {/* Hidden file input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="audio/*,.wav,.mp3,.flac,.m4a,.ogg,.webm"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
 
-            {/* Dropzone Container */}
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-outline-variant/50 hover:border-primary/60 bg-surface-container-low hover:bg-primary/5 rounded-2xl p-6 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 group"
-            >
-              <div className="w-12 h-12 rounded-2xl bg-surface-container-lowest border border-outline-variant/30 text-primary flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs">
-                <span className="material-symbols-outlined text-2xl">audio_file</span>
+                {/* Dropzone Container */}
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-outline-variant/50 hover:border-primary/60 bg-surface-container-low hover:bg-primary/5 rounded-2xl p-6 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 group"
+                >
+                  <div className="w-12 h-12 rounded-2xl bg-surface-container-lowest border border-outline-variant/30 text-primary flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs">
+                    <span className="material-symbols-outlined text-2xl">audio_file</span>
+                  </div>
+                  <div className="font-semibold text-xs text-on-surface mt-1">
+                    {audioFile && !audioFile.name?.startsWith('mic_') 
+                      ? audioFile.name 
+                      : 'Click to Browse or Drag Audio File Here'}
+                  </div>
+                  <p className="text-[11px] text-on-surface-variant max-w-xs">
+                    {audioFile && !audioFile.name?.startsWith('mic_')
+                      ? `${audioDuration ? `${audioDuration}s • ` : ''}${audioFile.size ? `${(audioFile.size / 1024).toFixed(1)} KB` : ''}` 
+                      : 'Supports recorded phone calls, voice notes, WAV, MP3, FLAC (16kHz)'}
+                  </p>
+                </div>
+              </>
+            )}
+
+            {/* B. LIVE MICROPHONE RECORDING MODE */}
+            {inputMode === 'record' && (
+              <div className="border-2 border-dashed border-primary/40 bg-surface-container-low rounded-2xl p-6 flex flex-col items-center justify-center gap-4 text-center">
+                
+                {/* Pulsing Visual Indicator */}
+                <div className="relative flex items-center justify-center">
+                  {isRecording && (
+                    <div className="absolute w-20 h-20 rounded-full bg-error/25 animate-ping"></div>
+                  )}
+                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-md transition-all ${
+                    isRecording 
+                      ? 'bg-error text-white shadow-error/30' 
+                      : audioFile?.name?.startsWith('mic_') 
+                        ? 'bg-tertiary text-on-tertiary' 
+                        : 'bg-surface-container-lowest border border-outline-variant/30 text-primary'
+                  }`}>
+                    <span className="material-symbols-outlined text-3xl">
+                      {isRecording ? 'mic' : audioFile?.name?.startsWith('mic_') ? 'check_circle' : 'mic_none'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Status & Timer Header */}
+                <div>
+                  <div className="font-bold text-sm text-on-surface flex items-center justify-center gap-2">
+                    {isRecording ? (
+                      <span className="text-error font-mono-metric flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-error animate-pulse"></span>
+                        RECORDING LIVE: {Math.floor(recordingSeconds / 60).toString().padStart(2, '0')}:{(recordingSeconds % 60).toString().padStart(2, '0')}
+                      </span>
+                    ) : audioFile?.name?.startsWith('mic_') ? (
+                      <span className="text-tertiary font-mono-metric flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-sm">verified</span>
+                        Recording Ready ({recordingSeconds || audioDuration || '0'}s Captured)
+                      </span>
+                    ) : (
+                      <span>Microphone Ready to Record</span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-on-surface-variant max-w-xs mt-1">
+                    {isRecording 
+                      ? 'Speak clearly into your microphone. Click Stop when finished.' 
+                      : audioFile?.name?.startsWith('mic_') 
+                        ? 'Live voice captured! You can re-record or execute the pipeline directly below.' 
+                        : 'Capture live spoken audio through your microphone for real-time forensic evaluation.'}
+                  </p>
+                </div>
+
+                {/* Live Animated Waveform when recording */}
+                {isRecording && (
+                  <div className="flex items-center gap-1 h-8 px-4">
+                    {[40, 80, 55, 95, 70, 85, 45, 90, 60, 100, 75, 50, 85, 65, 40].map((h, i) => (
+                      <div
+                        key={i}
+                        className="w-1 rounded-full bg-error animate-pulse"
+                        style={{ 
+                          height: `${h}%`,
+                          animationDelay: `${(i * 0.08).toFixed(2)}s` 
+                        }}
+                      ></div>
+                    ))}
+                  </div>
+                )}
+
+                {/* REHEAR LIVE MICROPHONE RECORDING CONTROLS */}
+                {audioFile?.name?.startsWith('mic_') && !isRecording && audioPreviewUrl && (
+                  <div className="w-full bg-surface-container-lowest p-4 rounded-2xl border border-primary/30 shadow-xs flex flex-col gap-3 animate-in fade-in duration-200">
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-2 font-mono-metric text-xs font-bold text-primary">
+                        <span className="material-symbols-outlined text-base">hearing</span>
+                        <span>Rehear Live Recording</span>
+                      </span>
+                      <span className="font-mono-metric text-[11px] font-semibold text-outline">
+                        {formatTime(playbackCurrentTime)} / {formatTime(parseFloat(audioDuration || recordingSeconds || 0))}
+                      </span>
+                    </div>
+
+                    {/* Timeline Seek Scrubber */}
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="range"
+                        min="0"
+                        max={parseFloat(audioDuration || recordingSeconds || 1)}
+                        step="0.05"
+                        value={playbackCurrentTime}
+                        onChange={handleSeekAudio}
+                        className="w-full h-1.5 bg-surface-container-high rounded-lg appearance-none cursor-pointer accent-primary"
+                        title="Seek audio position"
+                      />
+                    </div>
+
+                    {/* Rehear & Replay Action Buttons */}
+                    <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={toggleAudioPlay}
+                        className={`px-4 py-2 rounded-xl font-label-md text-xs font-bold transition-all shadow-xs flex items-center gap-2 ${
+                          isPlayingAudio
+                            ? 'bg-amber-600 text-white hover:brightness-110 shadow-amber-600/20'
+                            : 'bg-primary text-on-primary hover:brightness-105 active:scale-95 shadow-primary/20'
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-lg">
+                          {isPlayingAudio ? 'pause' : 'play_arrow'}
+                        </span>
+                        <span>{isPlayingAudio ? 'Pause Audio' : 'Rehear Recording'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleRestartAudio}
+                        className="px-3.5 py-2 bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-xl font-label-md text-xs font-semibold transition-all border border-outline-variant/30 flex items-center gap-1.5"
+                        title="Replay from start"
+                      >
+                        <span className="material-symbols-outlined text-base">replay</span>
+                        <span>Replay</span>
+                      </button>
+                    </div>
+
+                    {isPlayingAudio && (
+                      <div className="flex items-center justify-center gap-1 h-3 mt-0.5">
+                        <span className="text-[10px] font-mono-metric text-primary mr-1">Listening:</span>
+                        {[30, 70, 45, 90, 60, 80, 40].map((h, i) => (
+                          <div
+                            key={i}
+                            className="w-1 rounded-full bg-primary animate-pulse"
+                            style={{ height: `${h}%`, animationDelay: `${(i * 0.1).toFixed(2)}s` }}
+                          ></div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Record / Stop Action Buttons */}
+                <div className="flex items-center gap-2">
+                  {!isRecording ? (
+                    <button
+                      type="button"
+                      onClick={startRecording}
+                      className="px-4 py-2.5 bg-surface-container-highest hover:bg-surface-container text-on-surface rounded-xl font-label-md text-xs font-bold transition-all border border-outline-variant/30 flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-base text-primary">radio_button_checked</span>
+                      <span>{audioFile?.name?.startsWith('mic_') ? 'Record Again' : 'Start Recording'}</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={stopRecording}
+                      className="px-5 py-2.5 bg-error text-white hover:brightness-110 active:scale-95 rounded-xl font-label-md text-xs font-bold transition-all shadow-sm shadow-error/20 flex items-center gap-2 animate-pulse"
+                    >
+                      <span className="material-symbols-outlined text-base">stop</span>
+                      <span>Stop Recording</span>
+                    </button>
+                  )}
+                </div>
               </div>
-              <div className="font-semibold text-xs text-on-surface mt-1">
-                {audioFile ? audioFile.name : 'Click to Browse or Drag Audio File Here'}
-              </div>
-              <p className="text-[11px] text-on-surface-variant max-w-xs">
-                {audioFile 
-                  ? `${audioDuration ? `${audioDuration}s • ` : ''}${audioFile.size ? `${(audioFile.size / 1024).toFixed(1)} KB` : ''}` 
-                  : 'Supports recorded phone calls, voice notes, or simulated audio streams'}
-              </p>
-            </div>
+            )}
 
             {/* Audio Player if URL available */}
             {audioPreviewUrl && (
-              <div className="p-3 bg-surface-container-low rounded-2xl border border-outline-variant/25 flex items-center gap-3">
-                <button
-                  onClick={toggleAudioPlay}
-                  className="w-9 h-9 rounded-xl bg-primary text-on-primary flex items-center justify-center shrink-0 shadow-xs active:scale-95 transition-all"
-                >
-                  <span className="material-symbols-outlined text-lg">
-                    {isPlayingAudio ? 'pause' : 'play_arrow'}
-                  </span>
-                </button>
-                <div className="flex-1 text-xs">
-                  <div className="font-semibold text-on-surface truncate">{audioFile?.name || 'Audio Preview'}</div>
-                  <div className="text-[10px] text-outline font-mono-metric">
-                    {audioDuration ? `Duration: ${audioDuration}s • ` : ''}Audio Player Ready
+              <div className="p-3 bg-surface-container-low rounded-2xl border border-outline-variant/25 flex flex-col gap-2">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={toggleAudioPlay}
+                    className="w-9 h-9 rounded-xl bg-primary text-on-primary flex items-center justify-center shrink-0 shadow-xs active:scale-95 transition-all"
+                    title={isPlayingAudio ? 'Pause' : 'Rehear / Play'}
+                  >
+                    <span className="material-symbols-outlined text-lg">
+                      {isPlayingAudio ? 'pause' : 'play_arrow'}
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={handleRestartAudio}
+                    className="w-8 h-8 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface flex items-center justify-center shrink-0 border border-outline-variant/30 active:scale-95 transition-all"
+                    title="Replay from start"
+                  >
+                    <span className="material-symbols-outlined text-sm">replay</span>
+                  </button>
+
+                  <div className="flex-1 text-xs min-w-0">
+                    <div className="font-semibold text-on-surface truncate">{audioFile?.name || 'Audio Preview'}</div>
+                    <div className="text-[10px] text-outline font-mono-metric">
+                      {formatTime(playbackCurrentTime)} / {formatTime(parseFloat(audioDuration || recordingSeconds || 0))} • {audioFile?.name?.startsWith('mic_') ? 'Live Mic Audio' : 'Audio Player Ready'}
+                    </div>
                   </div>
                 </div>
+
+                {/* Scrubber inside audio player */}
+                <input
+                  type="range"
+                  min="0"
+                  max={parseFloat(audioDuration || recordingSeconds || 1)}
+                  step="0.05"
+                  value={playbackCurrentTime}
+                  onChange={handleSeekAudio}
+                  className="w-full h-1.5 bg-surface-container-high rounded-lg appearance-none cursor-pointer accent-primary"
+                  title="Seek audio position"
+                />
+
                 <audio
                   ref={audioPlayerRef}
                   src={audioPreviewUrl}
-                  onEnded={() => setIsPlayingAudio(false)}
+                  onTimeUpdate={(e) => setPlaybackCurrentTime(e.currentTarget.currentTime)}
+                  onEnded={() => {
+                    setIsPlayingAudio(false);
+                    setPlaybackCurrentTime(0);
+                  }}
                   className="hidden"
                 />
               </div>

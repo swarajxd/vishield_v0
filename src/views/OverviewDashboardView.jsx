@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   PHISHING_INDICATORS_SCHEMA, 
   POSTGRESQL_CALL_RECORDS, 
@@ -9,22 +9,82 @@ import {
 export default function OverviewDashboardView({ onInspectReport, onNavigateToAlert, onTriggerToast }) {
   const [activeSignalWeight, setActiveSignalWeight] = useState(DEFAULT_WEIGHTS);
   const [selectedIndicator, setSelectedIndicator] = useState(null);
+  const [dynamicIncidents, setDynamicIncidents] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Statistics calculated from evaluated calls
-  const totalCalls = 1420;
-  const highRiskCalls = 312;
-  const suspiciousCalls = 485;
-  const safeCalls = 623;
-  const spoofVoiceDetected = 289;
-  const guardianPushesSent = 304;
+  // Fetch live dynamic incidents from backend database
+  useEffect(() => {
+    let isMounted = true;
+    const fetchLiveIncidents = async () => {
+      try {
+        const res = await fetch('http://127.0.0.1:8000/incidents');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (Array.isArray(data) && isMounted) {
+          setDynamicIncidents(data);
+        }
+      } catch (err) {
+        console.warn('OverviewDashboard: Could not fetch live incidents from backend:', err);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+    fetchLiveIncidents();
+    return () => { isMounted = false; };
+  }, []);
+
+  // Compute live dynamic counts
+  const liveHighRisk = dynamicIncidents.filter(r => r.riskLevel === 'HIGH RISK' || (r.finalRisk || 0) >= 0.70).length;
+  const liveSuspicious = dynamicIncidents.filter(r => r.riskLevel === 'SUSPICIOUS' || ((r.finalRisk || 0) >= 0.40 && (r.finalRisk || 0) < 0.70)).length;
+  const liveSafe = dynamicIncidents.filter(r => r.riskLevel === 'SAFE' || (r.finalRisk || 0) < 0.40).length;
+  const liveSpoof = dynamicIncidents.filter(r => (r.aasistScore || 0) >= 0.70).length;
+  const liveGuardianPushes = dynamicIncidents.filter(r => r.guardianStatus?.includes('DELIVERED') || (r.finalRisk || 0) >= 0.70).length;
+  const liveScamHits = dynamicIncidents.filter(r => (r.conversationScore || 0) >= 0.40).length;
+
+  // Dynamic statistics calculated from baseline + real database evaluations
+  const totalCalls = 1420 + dynamicIncidents.length;
+  const highRiskCalls = 312 + liveHighRisk;
+  const suspiciousCalls = 485 + liveSuspicious;
+  const safeCalls = 623 + liveSafe;
+  const spoofVoiceDetected = 289 + liveSpoof;
+  const guardianPushesSent = 304 + liveGuardianPushes;
+  const scamHitsTotal = 797 + liveScamHits;
+
+  // Dynamic Post-Call Records combining live DB incidents with static reference data
+  const postCallRecords = useMemo(() => {
+    if (dynamicIncidents.length > 0) {
+      const mappedLive = dynamicIncidents.map(inc => {
+        const full = inc.fullResult || {};
+        const tri = full.tri_signal_scores || {};
+        return {
+          callId: inc.callId || full.call_id,
+          timestamp: inc.timestamp || full.timestamp,
+          callerNumber: inc.callerNumber || full.caller_number_masked || inc.fullCaller || 'Unknown',
+          language: inc.language || full.detected_language || 'English (en)',
+          conversationScore: inc.conversationScore ?? tri.conversation_scam_score ?? 0,
+          aasistScore: inc.aasistScore ?? tri.aasist_spoof_score ?? 0,
+          reputationScore: inc.reputationScore ?? tri.caller_reputation_score ?? 0,
+          finalRisk: inc.finalRisk ?? full.final_risk_score ?? 0,
+          riskLevel: inc.riskLevel || full.classification || (inc.finalRisk >= 0.70 ? 'HIGH RISK' : inc.finalRisk >= 0.40 ? 'SUSPICIOUS' : 'SAFE'),
+          inputSource: inc.audioFile ? `Live Pipeline (${inc.audioFile})` : 'Live Audio Pipeline',
+          isLive: true
+        };
+      });
+
+      const seen = new Set(mappedLive.map(r => r.callId));
+      const remainingStatic = POSTGRESQL_CALL_RECORDS.filter(r => !seen.has(r.callId));
+      return [...mappedLive, ...remainingStatic];
+    }
+    return POSTGRESQL_CALL_RECORDS;
+  }, [dynamicIncidents]);
 
   const indicatorCounts = {
-    authority_impersonation: 268,
-    urgency_fear: 304,
-    payment_requests: 221,
-    information_requests: 279,
-    isolation_secrecy: 142,
-    trust_manipulation: 195
+    authority_impersonation: 268 + dynamicIncidents.filter(r => (r.detectedIndicators || []).some(ind => ind.toLowerCase().includes('authority'))).length,
+    urgency_fear: 304 + dynamicIncidents.filter(r => (r.detectedIndicators || []).some(ind => ind.toLowerCase().includes('urgency') || ind.toLowerCase().includes('fear'))).length,
+    payment_requests: 221 + dynamicIncidents.filter(r => (r.detectedIndicators || []).some(ind => ind.toLowerCase().includes('payment') || ind.toLowerCase().includes('money'))).length,
+    information_requests: 279 + dynamicIncidents.filter(r => (r.detectedIndicators || []).some(ind => ind.toLowerCase().includes('otp') || ind.toLowerCase().includes('credential'))).length,
+    isolation_secrecy: 142 + dynamicIncidents.filter(r => (r.detectedIndicators || []).some(ind => ind.toLowerCase().includes('isolation') || ind.toLowerCase().includes('secrecy'))).length,
+    trust_manipulation: 195 + dynamicIncidents.filter(r => (r.detectedIndicators || []).some(ind => ind.toLowerCase().includes('trust'))).length
   };
 
   return (
@@ -38,8 +98,14 @@ export default function OverviewDashboardView({ onInspectReport, onNavigateToAle
               VOICE PHISHING EVALUATOR
             </span>
             <span className="font-mono-metric text-xs text-outline">
-              Azure AI Integration &amp; AASIST Voice Anti-Spoofing
+              Multimodal Speech &amp; AASIST Voice Anti-Spoofing
             </span>
+            {dynamicIncidents.length > 0 && (
+              <span className="px-2 py-0.5 rounded-full bg-tertiary/10 text-tertiary border border-tertiary/20 text-[10px] font-mono-metric font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
+                LIVE DB CONNECTED ({dynamicIncidents.length} Records)
+              </span>
+            )}
           </div>
           <h2 className="font-headline-lg text-2xl sm:text-3xl font-bold text-on-surface tracking-tight mt-1">
             Real-Time Multimodal Vishing Defense Matrix
@@ -52,7 +118,7 @@ export default function OverviewDashboardView({ onInspectReport, onNavigateToAle
         {/* Action Controls */}
         <div className="flex items-center gap-3 shrink-0">
           <button
-            onClick={() => onTriggerToast('Running validation check across Azure AI Speech and AASIST model weights...')}
+            onClick={() => onTriggerToast('Running validation check across Personalized AI and AASIST model weights...')}
             className="px-4 py-2 bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-xl font-label-md text-sm font-semibold border border-outline-variant/30 transition-all flex items-center gap-2 shadow-xs"
           >
             <span className="material-symbols-outlined text-base text-primary">tune</span>
@@ -78,7 +144,9 @@ export default function OverviewDashboardView({ onInspectReport, onNavigateToAle
             <span className="material-symbols-outlined text-primary text-xl">perm_phone_msg</span>
           </div>
           <div className="my-2">
-            <span className="font-display-lg text-3xl font-extrabold text-on-surface tracking-tight">1,420</span>
+            <span className="font-display-lg text-3xl font-extrabold text-on-surface tracking-tight">
+              {totalCalls.toLocaleString()}
+            </span>
             <span className="text-xs text-outline ml-2">all input sources</span>
           </div>
           <div className="flex items-center gap-2 text-xs font-medium">
@@ -105,18 +173,20 @@ export default function OverviewDashboardView({ onInspectReport, onNavigateToAle
           </div>
         </div>
 
-        {/* Metric 3: Azure AI Semantic Scam Flags */}
+        {/* Metric 3: Personalized AI Model for Scam Detection */}
         <div className="p-5 rounded-2xl bg-surface-container-lowest border border-outline-variant/30 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between text-outline">
-            <span className="font-mono-metric text-xs font-semibold uppercase tracking-wider">Azure AI Scam Hits</span>
+            <span className="font-mono-metric text-xs font-semibold uppercase tracking-wider">
+              Personalized AI Model for Scam Detection
+            </span>
             <span className="material-symbols-outlined text-purple-600 text-xl">psychology</span>
           </div>
           <div className="my-2">
-            <span className="font-display-lg text-3xl font-extrabold text-purple-700 tracking-tight">797</span>
+            <span className="font-display-lg text-3xl font-extrabold text-purple-700 tracking-tight">{scamHitsTotal}</span>
             <span className="text-xs text-outline ml-2">across 6 criteria</span>
           </div>
           <div className="text-xs text-on-surface-variant">
-            Speech-to-Text (Hindi/Eng/Hinglish) + GPT-4o context reasoning
+            Personalized neural transformer context reasoning across 6 phishing criteria
           </div>
         </div>
 
@@ -272,10 +342,10 @@ export default function OverviewDashboardView({ onInspectReport, onNavigateToAle
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-outline-variant/20 mb-5">
           <div>
             <h3 className="font-title text-lg font-bold text-on-surface">
-              Section 3.2: The Six Phishing Indicators (Azure AI Foundry / LLM)
+              Section 3.2: The Six Phishing Indicators
             </h3>
             <p className="text-xs text-on-surface-variant mt-0.5">
-              Evaluated contextually by GPT-4o beyond keyword matching. Click any card to review telemetry hits.
+              Evaluated contextually by Personalized AI beyond keyword matching. Click any card to review telemetry hits.
             </p>
           </div>
           <span className="text-xs font-mono-metric text-outline bg-surface-container px-3 py-1 rounded-full">
@@ -321,15 +391,23 @@ export default function OverviewDashboardView({ onInspectReport, onNavigateToAle
       <section className="bg-surface-container-lowest rounded-3xl p-6 border border-outline-variant/30 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-outline-variant/20 mb-4">
           <div>
-            <h3 className="font-title text-lg font-bold text-on-surface">
-              Post-Call Analytics &amp; PostgreSQL Records (Section 9)
-            </h3>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="font-title text-lg font-bold text-on-surface">
+                Post-Call Analytics &amp; PostgreSQL Records (Section 9)
+              </h3>
+              {dynamicIncidents.length > 0 && (
+                <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 text-[10px] font-mono-metric font-bold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                  {dynamicIncidents.length} Live DB Records Active
+                </span>
+              )}
+            </div>
             <p className="text-xs text-on-surface-variant mt-0.5">
-              Structured evaluation records stored in PostgreSQL with 3-signal decomposition.
+              Structured evaluation records stored in database with dynamic 3-signal decomposition.
             </p>
           </div>
           <button
-            onClick={() => onInspectReport('CALL-2026-9102')}
+            onClick={() => onInspectReport(postCallRecords[0]?.callId || 'CALL-2026-9102')}
             className="text-xs text-primary font-semibold hover:underline flex items-center gap-1"
           >
             <span>View Full Incident History</span>
@@ -353,7 +431,7 @@ export default function OverviewDashboardView({ onInspectReport, onNavigateToAle
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/15 font-body-md">
-              {POSTGRESQL_CALL_RECORDS.map((rec) => {
+              {postCallRecords.map((rec) => {
                 const isHigh = rec.riskLevel === 'HIGH RISK';
                 const isSuspicious = rec.riskLevel === 'SUSPICIOUS';
                 const badgeColor = isHigh 
@@ -362,11 +440,22 @@ export default function OverviewDashboardView({ onInspectReport, onNavigateToAle
                   ? 'bg-amber-500/10 text-amber-700 border-amber-500/20' 
                   : 'bg-tertiary/10 text-tertiary border-tertiary/20';
 
+                const timeStr = rec.timestamp?.includes(' ') 
+                  ? rec.timestamp.split(' ')[1] 
+                  : (rec.timestamp || 'Just now');
+
                 return (
                   <tr key={rec.callId} className="hover:bg-surface-container-low/70 transition-colors">
                     <td className="py-3 px-3">
-                      <div className="font-mono-metric font-bold text-on-surface">{rec.callId}</div>
-                      <div className="text-[11px] text-outline">{rec.timestamp.split(' ')[1]} IST</div>
+                      <div className="font-mono-metric font-bold text-on-surface flex items-center gap-1.5">
+                        <span>{rec.callId}</span>
+                        {rec.isLive && (
+                          <span className="px-1.5 py-0.2 rounded bg-primary/10 text-primary border border-primary/20 text-[9px] font-mono-metric font-bold">
+                            LIVE
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-outline">{timeStr}</div>
                     </td>
                     <td className="py-3 px-3">
                       <div className="font-mono-metric text-on-surface font-medium">{rec.callerNumber}</div>

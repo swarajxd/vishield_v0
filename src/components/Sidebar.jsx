@@ -19,7 +19,6 @@ export default function Sidebar({
   const mainNavItems = [
     { path: '/', label: 'Overview Dashboard', icon: 'dashboard', badge: null },
     { path: '/systemArchitecture', label: 'System Architecture', icon: 'account_tree', badge: 'SPEC', badgeColor: 'bg-primary' },
-    { path: '/liveStream', label: 'Live Stream Analysis', icon: 'graphic_eq', badge: 'LIVE', badgeColor: 'bg-primary' },
     { path: '/audioPipeline', label: 'Audio Pipeline Runner', icon: 'model_training', badge: 'EVAL', badgeColor: 'bg-primary' },
     { path: '/callAnalysis', label: 'Call Analysis Report', icon: 'description', badge: null },
     { path: '/incidentHistory', label: 'Incident History', icon: 'history', badge: '1,420', badgeColor: 'bg-surface-container' },
@@ -188,24 +187,6 @@ export default function Sidebar({
 
         {/* Sidebar Bottom Container */}
         <div className="flex flex-col gap-2.5 pt-3 border-t border-outline-variant/30 mt-2">
-          {/* CTA Action Button: Emergency Killswitch */}
-          <button 
-            onClick={onTriggerKillswitch}
-            title={isCollapsed ? "Emergency Killswitch" : undefined}
-            className={`w-full flex items-center rounded-xl bg-error/10 hover:bg-error/20 text-error border border-error/30 font-label-md text-label-md font-bold shadow-sm hover:brightness-105 active:scale-[0.98] transition-all duration-150 ${
-              isCollapsed ? 'justify-center p-2.5 relative group' : 'justify-center gap-2 py-2.5 px-3'
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-error animate-ping shrink-0"></span>
-            <span className="material-symbols-outlined text-[19px] shrink-0">power_settings_new</span>
-            {!isCollapsed && <span>Emergency Killswitch</span>}
-            {isCollapsed && (
-              <div className="absolute left-full ml-2.5 px-2.5 py-1.5 bg-error text-on-error text-xs font-bold rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap">
-                Emergency Killswitch
-              </div>
-            )}
-          </button>
-
           {/* Expand/Shrink Toggle button at bottom for easy access */}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}

@@ -65,8 +65,8 @@ export default function SystemArchitectureView({ onNavigateToLive, onTriggerToas
             onClick={onNavigateToLive}
             className="px-4 py-2.5 bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-xl font-label-md text-sm font-semibold border border-outline-variant/30 transition-all flex items-center gap-1.5"
           >
-            <span className="material-symbols-outlined text-lg text-primary">graphic_eq</span>
-            <span>Open Live Monitor</span>
+            <span className="material-symbols-outlined text-lg text-primary">model_training</span>
+            <span>Open Audio Pipeline</span>
           </button>
         </div>
       </div>
