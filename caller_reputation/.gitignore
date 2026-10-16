@@ -3,3 +3,13 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+*.pth
+*.pt
+*.joblib
+*.pkl
+best_dev_eer.pth
+models/*.joblib
+models/*.pkl
+models/*.pth
+models/*.pt
+!models/.gitkeep

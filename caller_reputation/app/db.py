@@ -1,7 +1,7 @@
-"""Layer 2 storage: aggregated scam-number table + per-report log + whitelist + source traces + scrape logs."""
+"""Layer 2 storage: aggregated scam-number table + per-report log + whitelist + source traces + scrape logs + incidents."""
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, Integer, String, UniqueConstraint, create_engine
+from sqlalchemy import DateTime, Float, Integer, String, Text, UniqueConstraint, create_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 from .config import DATABASE_URL
@@ -61,6 +61,29 @@ class ScrapeLog(Base):
     topic_id: Mapped[str] = mapped_column(String(80), unique=True, index=True)
     last_bumped_at: Mapped[str | None] = mapped_column(String(80), nullable=True)
     scraped_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class Incident(Base):
+    """Stores every pipeline evaluation result for the Incident History / Post-Call Audit Log."""
+    __tablename__ = "incidents"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    call_id: Mapped[str] = mapped_column(String(40), unique=True, index=True)
+    timestamp: Mapped[str] = mapped_column(String(60))
+    caller_number_raw: Mapped[str] = mapped_column(String(30))
+    caller_number_masked: Mapped[str] = mapped_column(String(30))
+    duration_seconds: Mapped[float] = mapped_column(Float, default=0.0)
+    detected_language: Mapped[str] = mapped_column(String(20), default="en")
+    conversation_score: Mapped[float] = mapped_column(Float, default=0.0)
+    aasist_score: Mapped[float] = mapped_column(Float, default=0.0)
+    reputation_score: Mapped[float] = mapped_column(Float, default=0.0)
+    final_risk: Mapped[float] = mapped_column(Float, default=0.0)
+    classification: Mapped[str] = mapped_column(String(20), default="SAFE")
+    detected_indicators: Mapped[str] = mapped_column(Text, default="")  # JSON array string
+    guardian_status: Mapped[str] = mapped_column(String(120), default="NOT_TRIGGERED")
+    transcript: Mapped[str] = mapped_column(Text, default="")
+    audio_file: Mapped[str] = mapped_column(String(255), default="")
+    full_result_json: Mapped[str] = mapped_column(Text, default="{}")  # full pipeline JSON
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
 _kwargs = {"connect_args": {"check_same_thread": False}} if DATABASE_URL.startswith("sqlite") else {}

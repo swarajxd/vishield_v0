@@ -1,166 +1,187 @@
 import React, { useState } from 'react';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import KillswitchModal from './components/KillswitchModal';
+import SystemArchitectureView from './views/SystemArchitectureView';
 import OverviewDashboardView from './views/OverviewDashboardView';
-import LiveCallMonitorView from './views/LiveCallMonitorView';
-import HighRiskWarningView from './views/HighRiskWarningView';
 import CallAnalysisReportView from './views/CallAnalysisReportView';
 import IncidentHistoryView from './views/IncidentHistoryView';
 import NumberCheckerView from './views/NumberCheckerView';
-import DiagnosticsView from './views/DiagnosticsView';
-import SettingsView from './views/SettingsView';
+import AudioPipelineEvaluatorView from './views/AudioPipelineEvaluatorView';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('overview');
+  const navigate = useNavigate();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [killswitchOpen, setKillswitchOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeStreamFilter, setActiveStreamFilter] = useState('all');
-  const [activeIncidentId, setActiveIncidentId] = useState('#INC-2024-8841');
+  const [activeIncidentId, setActiveIncidentId] = useState(null);
+  const [activePipelineReport, setActivePipelineReport] = useState(null);
 
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => {
       setToastMessage(null);
-    }, 3800);
+    }, 4000);
   };
 
-  const handleDeployProbe = () => {
-    showToast('Active telephony acoustic probe deployed to carrier trunks #12 - #16');
+  const handleOpenReportFromPipeline = (report) => {
+    if (report) {
+      setActivePipelineReport(report);
+      if (report.callId) setActiveIncidentId(report.callId);
+    }
+    navigate('/callAnalysis');
+    showToast('Loaded Audio Pipeline evaluation report in Call Analysis View.');
   };
 
-  const handleExportTelemetry = () => {
-    showToast('Exporting consolidated acoustic telemetry (JSON & CSV packages)...');
+  const handleSimulateCall = () => {
+    navigate('/audioPipeline');
+    showToast('Opened Audio Pipeline Runner: Upload audio to evaluate AASIST and Scam Engine models.');
+  };
+
+  const handleExportReport = () => {
+    showToast('Exporting consolidated post-call report (PDF & PostgreSQL dump)...');
   };
 
   const handleConfirmKillswitch = () => {
     setKillswitchOpen(false);
-    showToast('STAGE 4 EMERGENCY KILLSWITCH ENGAGED: 48 carrier trunks disconnected. Honeynet active.');
+    showToast('EMERGENCY DISCONNECT EXECUTED: Audio stream dropped. Guardian notified via Firebase FCM.');
+  };
+
+  const handleNotifyGuardian = (guardianInfo) => {
+    showToast(`Firebase Cloud Messaging (FCM) push dispatched to ${guardianInfo?.recipient || 'Guardian'}: "${guardianInfo?.snippet || 'High risk call detected'}"`);
   };
 
   return (
     <div className="min-h-screen bg-background text-on-surface flex flex-col font-body-md antialiased selection:bg-primary-fixed selection:text-on-primary-fixed-variant">
-      {/* Shared Glass Sidebar */}
+      {/* Sidebar with PDF Specification Navigation & Shrink Toggle */}
       <Sidebar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
         onTriggerKillswitch={() => setKillswitchOpen(true)}
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
+        isCollapsed={sidebarCollapsed}
+        setIsCollapsed={setSidebarCollapsed}
       />
 
-      {/* Main Workspace Wrapper (Offset for md:pl-72 sidebar) */}
-      <div className="flex-1 flex flex-col min-h-screen min-w-0 transition-all">
-        {/* Shared Top Glass Nav Bar */}
+      {/* Main Workspace Wrapper (Offset transitions between md:pl-24 and md:pl-80) */}
+      <div className="flex-1 flex flex-col min-h-screen min-w-0 transition-all duration-300">
+        {/* Top Header */}
         <Header
-          onDeployProbe={handleDeployProbe}
-          onExportTelemetry={handleExportTelemetry}
+          onSimulateCall={handleSimulateCall}
+          onExportReport={handleExportReport}
           setMobileOpen={setMobileOpen}
+          isCollapsed={sidebarCollapsed}
+          setIsCollapsed={setSidebarCollapsed}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           activeStreamFilter={activeStreamFilter}
           setActiveStreamFilter={setActiveStreamFilter}
         />
 
-        {/* Dynamic View Canvas */}
-        <main className="flex-1 px-4 sm:px-6 lg:px-space-xl py-space-md md:pl-80 transition-all">
-          {activeTab === 'overview' && (
-            <OverviewDashboardView
-              onInspectReport={(id) => {
-                setActiveIncidentId(id);
-                setActiveTab('report');
-              }}
-              onNavigateToAlert={() => setActiveTab('alert')}
-              onTriggerToast={showToast}
-            />
-          )}
+        {/* Dynamic View Canvas using React Router */}
+        <main className={`flex-1 px-4 sm:px-6 lg:px-space-xl py-space-md transition-all duration-300 ease-in-out ${
+          sidebarCollapsed ? 'md:pl-24' : 'md:pl-80'
+        }`}>
+          <Routes>
+            {/* Root localhost:5173 points to Overview Dashboard */}
+            <Route path="/" element={
+              <OverviewDashboardView
+                onInspectReport={(id) => {
+                  setActiveIncidentId(id);
+                  navigate('/callAnalysis');
+                }}
+                onNavigateToAlert={() => navigate('/callAnalysis')}
+                onTriggerToast={showToast}
+              />
+            } />
+            <Route path="/dashboard" element={<Navigate to="/" replace />} />
+            <Route path="/overview" element={<Navigate to="/" replace />} />
 
-          {activeTab === 'live' && (
-            <LiveCallMonitorView
-              onEndCall={() => showToast('Active call disconnected and quarantined.')}
-              onNotifyGuardian={() => showToast('Guardian Rohan verified and connected to stream.')}
-              onTriggerToast={showToast}
-            />
-          )}
+            {/* /systemArchitecture */}
+            <Route path="/systemArchitecture" element={
+              <SystemArchitectureView
+                onNavigateToLive={() => navigate('/audioPipeline')}
+                onTriggerToast={showToast}
+              />
+            } />
+            <Route path="/systemarchitecture" element={<Navigate to="/systemArchitecture" replace />} />
+            <Route path="/architecture" element={<Navigate to="/systemArchitecture" replace />} />
 
-          {activeTab === 'alert' && (
-            <HighRiskWarningView
-              onTerminateCall={() => showToast('Emergency Disconnect executed across carrier gateways.')}
-              onTriggerToast={showToast}
-              onOpenReport={() => setActiveTab('report')}
-            />
-          )}
+            {/* Legacy /liveStream redirect to /audioPipeline */}
+            <Route path="/liveStream" element={<Navigate to="/audioPipeline" replace />} />
+            <Route path="/livestream" element={<Navigate to="/audioPipeline" replace />} />
+            <Route path="/live" element={<Navigate to="/audioPipeline" replace />} />
 
-          {activeTab === 'report' && (
-            <CallAnalysisReportView
-              incidentId={activeIncidentId}
-              onTriggerToast={showToast}
-            />
-          )}
+            {/* /audioPipeline */}
+            <Route path="/audioPipeline" element={
+              <AudioPipelineEvaluatorView
+                onTriggerToast={showToast}
+                onOpenReport={handleOpenReportFromPipeline}
+                onSavePipelineReport={(report) => {
+                  setActivePipelineReport(report);
+                  if (report?.callId) setActiveIncidentId(report.callId);
+                }}
+              />
+            } />
+            <Route path="/audiopipeline" element={<Navigate to="/audioPipeline" replace />} />
+            <Route path="/pipeline" element={<Navigate to="/audioPipeline" replace />} />
 
-          {activeTab === 'history' && (
-            <IncidentHistoryView
-              onInspectReport={(id) => {
-                setActiveIncidentId(id);
-                setActiveTab('report');
-              }}
-              onTriggerToast={showToast}
-            />
-          )}
+            {/* /callAnalysis */}
+            <Route path="/callAnalysis" element={
+              <CallAnalysisReportView
+                incidentId={activeIncidentId}
+                activePipelineReport={activePipelineReport}
+                onTriggerToast={showToast}
+              />
+            } />
+            <Route path="/callanalysis" element={<Navigate to="/callAnalysis" replace />} />
+            <Route path="/report" element={<Navigate to="/callAnalysis" replace />} />
 
-          {activeTab === 'checker' && (
-            <NumberCheckerView onTriggerToast={showToast} />
-          )}
+            {/* /incidentHistory */}
+            <Route path="/incidentHistory" element={
+              <IncidentHistoryView
+                onInspectReport={(id) => {
+                  setActiveIncidentId(id);
+                  navigate('/callAnalysis');
+                }}
+                onTriggerToast={showToast}
+              />
+            } />
+            <Route path="/incidenthistory" element={<Navigate to="/incidentHistory" replace />} />
+            <Route path="/history" element={<Navigate to="/incidentHistory" replace />} />
 
-          {activeTab === 'diagnostics' && (
-            <DiagnosticsView onTriggerToast={showToast} />
-          )}
+            {/* /numberChecker */}
+            <Route path="/numberChecker" element={
+              <NumberCheckerView onTriggerToast={showToast} />
+            } />
+            <Route path="/numberchecker" element={<Navigate to="/numberChecker" replace />} />
+            <Route path="/checker" element={<Navigate to="/numberChecker" replace />} />
 
-          {activeTab === 'settings' && (
-            <SettingsView onTriggerToast={showToast} />
-          )}
-
-          {/* Secondary views fallback with informative card */}
-          {['baselines', 'synthetic_log', 'threat_intel', 'policies'].includes(activeTab) && (
-            <div className="max-w-4xl mx-auto p-8 bg-surface-container-lowest rounded-3xl border border-outline-variant/30 text-center space-y-4 my-8">
-              <div className="w-14 h-14 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mx-auto">
-                <span className="material-symbols-outlined text-3xl">psychology</span>
-              </div>
-              <h2 className="text-headline-md font-bold text-on-surface capitalize">
-                {activeTab.replace('_', ' ')}
-              </h2>
-              <p className="text-on-surface-variant max-w-lg mx-auto">
-                Connected to National Cybercrime Coordination Centre (I4C) acoustic neural database. Real-time synchronizations run every 60 seconds.
-              </p>
-              <button
-                onClick={() => setActiveTab('overview')}
-                className="px-5 py-2.5 bg-primary text-on-primary rounded-xl font-label-md font-semibold hover:brightness-105 active:scale-95 transition-all"
-              >
-                Return to Overview Dashboard
-              </button>
-            </div>
-          )}
+            {/* Wildcard redirect to Dashboard */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         </main>
       </div>
 
-      {/* Emergency Killswitch Modal */}
+      {/* Emergency Call Disconnect Modal */}
       <KillswitchModal
         isOpen={killswitchOpen}
         onClose={() => setKillswitchOpen(false)}
         onConfirmKill={handleConfirmKillswitch}
       />
 
-      {/* Apple HIG Frosted HUD Toast Notification */}
+      {/* HUD Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-3 duration-200 pointer-events-auto">
-          <div className="bg-surface-container-lowest/95 backdrop-blur-2xl border border-outline-variant/40 rounded-2xl px-4 py-3 shadow-2xl flex items-center gap-3 text-on-surface font-label-md text-sm max-w-md">
+          <div className="bg-surface-container-lowest/95 backdrop-blur-2xl border border-outline-variant/40 rounded-2xl px-4 py-3 shadow-2xl flex items-center gap-3 text-on-surface font-label-md text-xs sm:text-sm max-w-md">
             <span className="material-symbols-outlined text-primary text-[20px]">info</span>
-            <span>{toastMessage}</span>
+            <span className="flex-1">{toastMessage}</span>
             <button
               onClick={() => setToastMessage(null)}
-              className="ml-auto text-outline hover:text-on-surface p-1"
+              className="text-outline hover:text-on-surface p-1"
             >
               <span className="material-symbols-outlined text-[16px]">close</span>
             </button>
